@@ -1,0 +1,15 @@
+.button { display:inline-flex; align-items:center; justify-content:center; gap:.5rem; font-family:var(--font-family-base); font-weight:500; border-radius:var(--radius); white-space:nowrap; cursor:pointer; border:1px solid transparent; outline:none; transition:120ms ease; }
+.button:focus-visible { box-shadow:0 0 0 2px var(--background),0 0 0 4px var(--primary); }
+.sm { height:2rem; padding:0 .6rem; font-size:.78rem; }
+.md { height:2.5rem; padding:0 .75rem; font-size:.94rem; }
+.lg { height:3rem; padding:0 1rem; font-size:1rem; }
+.icon,.icon-md { width:2rem; height:2rem; padding:0; }
+.icon-sm { width:2rem; height:2rem; padding:0; }
+.icon-lg { width:2.5rem; height:2.5rem; padding:0; }
+.primary { background:var(--primary); color:var(--primary-foreground); border-color:var(--primary); }
+.secondary { background:var(--secondary); color:var(--secondary-foreground); border-color:var(--secondary); }
+.outline { background:transparent; border-color:var(--primary); color:var(--primary); }
+.ghost,.link { background:transparent; color:var(--primary); }
+.destructive { background:var(--error); color:var(--error-foreground); }
+.button:hover { filter:brightness(1.08); }
+.disabled { opacity:.5; cursor:not-allowed; pointer-events:none; }

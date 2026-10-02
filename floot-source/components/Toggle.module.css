@@ -1,0 +1,7 @@
+.toggle { user-select:none; color:var(--foreground); background:transparent; border-color:var(--border); }
+.toggle-size-sm { height:2rem; min-width:2rem; padding:0 .25rem; font-size:.875rem; }
+.toggle-size-md { height:2.5rem; min-width:2.5rem; padding:0 .5rem; font-size:.9375rem; }
+.toggle-size-lg { height:3rem; min-width:3rem; padding:0 .75rem; font-size:1rem; }
+.toggle-variant-default:hover,.toggle-variant-outline:hover { background:var(--muted); }
+.toggle-variant-default[data-state="on"] { background:var(--primary); color:var(--primary-foreground); border-color:var(--primary); }
+.toggle-variant-outline[data-state="on"] { background:var(--muted); border-color:var(--primary); color:var(--foreground); }
