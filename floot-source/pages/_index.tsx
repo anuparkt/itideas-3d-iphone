@@ -3,7 +3,7 @@ import * as THREE from "three";
 import { OrbitControls } from "three/addons/controls/OrbitControls.js";
 import { STLLoader } from "three/addons/loaders/STLLoader.js";
 import { ThreeMFLoader } from "three/addons/loaders/3MFLoader.js";
-import { Box, Camera, Crosshair, FileUp, Focus, Grid3X3, Image, RotateCcw, Ruler, ScanLine, Triangle, View } from "lucide-react";
+import { Box, Camera, Crosshair, FileUp, Focus, Grid3X3, Image, Maximize2, RotateCcw, Ruler, ScanLine, Triangle, View } from "lucide-react";
 import { Button } from "../components/Button";
 import { Toggle } from "../components/Toggle";
 import { Input } from "../components/Input";
@@ -59,7 +59,8 @@ export default function IndexPage() {
     controls.dampingFactor = 0.08;
     controls.screenSpacePanning = true;
 
-    scene.add(new THREE.HemisphereLight(0xc8f7ff, 0x1a2328, 1.65));
+    const ambient = new THREE.HemisphereLight(0xc8f7ff, 0x1a2328, 1.65);
+    scene.add(ambient);
     const key = new THREE.DirectionalLight(0xffffff, 2.2);
     key.position.set(90, 130, 80);
     scene.add(key);
@@ -79,11 +80,14 @@ export default function IndexPage() {
     const measurementGroup = new THREE.Group();
     scene.add(measurementGroup);
 
-    const demoGeometry = new THREE.BoxGeometry(80, 20, 50);
-    const demoMaterial = new THREE.MeshStandardMaterial({ color: 0x7a919b, roughness: 0.42, metalness: 0.12 });
-    const demoMesh = new THREE.Mesh(demoGeometry, demoMaterial);
-    demoMesh.position.y = 10;
-    modelGroup.add(demoMesh);
+    const makeDemo = () => {
+      const g = new THREE.BoxGeometry(80, 20, 50);
+      const m = new THREE.MeshStandardMaterial({ color: 0x7a919b, roughness: 0.42, metalness: 0.12 });
+      const mesh = new THREE.Mesh(g, m);
+      mesh.position.y = 10;
+      modelGroup.add(mesh);
+    };
+    makeDemo();
 
     const getBounds = () => new THREE.Box3().setFromObject(modelGroup);
     const fit = () => {
@@ -108,9 +112,12 @@ export default function IndexPage() {
       const center = box.getCenter(new THREE.Vector3());
       const d = Math.max(size.x, size.y, size.z, 10) * 2.3;
       const map: Record<string, THREE.Vector3> = {
-        ISO: new THREE.Vector3(1, 0.8, 1), FRONT: new THREE.Vector3(0, 0, 1),
-        BACK: new THREE.Vector3(0, 0, -1), LEFT: new THREE.Vector3(-1, 0, 0),
-        RIGHT: new THREE.Vector3(1, 0, 0), TOP: new THREE.Vector3(0, 1, 0),
+        ISO: new THREE.Vector3(1, 0.8, 1),
+        FRONT: new THREE.Vector3(0, 0, 1),
+        BACK: new THREE.Vector3(0, 0, -1),
+        LEFT: new THREE.Vector3(-1, 0, 0),
+        RIGHT: new THREE.Vector3(1, 0, 0),
+        TOP: new THREE.Vector3(0, 1, 0),
         BOTTOM: new THREE.Vector3(0, -1, 0),
       };
       const dir = (map[name] || map.ISO).clone().normalize();
@@ -124,18 +131,26 @@ export default function IndexPage() {
 
     const setModeFn = (next: RenderMode) => {
       const edgeObjects: THREE.Object3D[] = [];
-      modelGroup.traverse((obj) => { if (obj.userData.itideasEdges) edgeObjects.push(obj); });
+      modelGroup.traverse((obj) => {
+        if (obj.userData.itideasEdges) edgeObjects.push(obj);
+      });
       edgeObjects.forEach((obj) => obj.parent?.remove(obj));
       modelGroup.traverse((obj) => {
         if (!(obj instanceof THREE.Mesh)) return;
         const material = obj.material as THREE.MeshStandardMaterial;
-        material.wireframe = next === "wireframe";
-        material.transparent = false;
-        material.opacity = 1;
+        if (next === "wireframe") {
+          material.wireframe = true;
+          material.transparent = false;
+          material.opacity = 1;
+        } else {
+          material.wireframe = false;
+          material.transparent = false;
+          material.opacity = 1;
+        }
         if (next === "edges" && obj.geometry) {
           const lines = new THREE.LineSegments(
             new THREE.EdgesGeometry(obj.geometry, 18),
-            new THREE.LineBasicMaterial({ color: 0x35d5f2, transparent: true, opacity: 0.8 }),
+            new THREE.LineBasicMaterial({ color: 0x35d5f2, transparent: true, opacity: 0.8 })
           );
           lines.userData.itideasEdges = true;
           obj.add(lines);
@@ -151,7 +166,6 @@ export default function IndexPage() {
       a.click();
     };
 
-    let measurePoints: THREE.Vector3[] = [];
     const clearMeasure = () => {
       measurementGroup.clear();
       measurePoints = [];
@@ -159,14 +173,18 @@ export default function IndexPage() {
     };
 
     apiRef.current = {
-      fit, setView, setMode: setModeFn,
+      fit,
+      setView,
+      setMode: setModeFn,
       setGrid: (show) => { grid.visible = show; },
       setAxes: (show) => { axes.visible = show; },
-      capture, clearMeasure,
+      capture,
+      clearMeasure,
     };
 
     const raycaster = new THREE.Raycaster();
     const pointer = new THREE.Vector2();
+    let measurePoints: THREE.Vector3[] = [];
     const handlePointer = (event: PointerEvent) => {
       if (!measureOn) return;
       const rect = renderer.domElement.getBoundingClientRect();
@@ -176,17 +194,17 @@ export default function IndexPage() {
       const hits = raycaster.intersectObject(modelGroup, true).filter((h) => h.object instanceof THREE.Mesh);
       if (!hits.length) return;
       const p = hits[0].point.clone();
-      if (measurePoints.length >= 2) { measurementGroup.clear(); measurePoints = []; }
+      if (measurePoints.length >= 2) {
+        measurementGroup.clear();
+        measurePoints = [];
+      }
       measurePoints.push(p);
-      const radius = Math.max(getBounds().getSize(new THREE.Vector3()).length() * 0.008, 0.6);
-      const dot = new THREE.Mesh(new THREE.SphereGeometry(radius, 18, 18), new THREE.MeshBasicMaterial({ color: 0x35d5f2 }));
+      const dot = new THREE.Mesh(new THREE.SphereGeometry(Math.max(getBounds().getSize(new THREE.Vector3()).length() * 0.008, 0.6), 18, 18), new THREE.MeshBasicMaterial({ color: 0x35d5f2 }));
       dot.position.copy(p);
       measurementGroup.add(dot);
       if (measurePoints.length === 2) {
-        measurementGroup.add(new THREE.Line(
-          new THREE.BufferGeometry().setFromPoints(measurePoints),
-          new THREE.LineBasicMaterial({ color: 0x35d5f2 }),
-        ));
+        const lineGeo = new THREE.BufferGeometry().setFromPoints(measurePoints);
+        measurementGroup.add(new THREE.Line(lineGeo, new THREE.LineBasicMaterial({ color: 0x35d5f2 })));
         const dist = measurePoints[0].distanceTo(measurePoints[1]);
         setMeasurement(dist);
         setMessage(`Measured ${dist.toFixed(2)} mm`);
@@ -245,7 +263,9 @@ export default function IndexPage() {
     if (!root) return;
     root.clear();
     object.traverse((obj) => {
-      if (obj instanceof THREE.Mesh) obj.material = new THREE.MeshStandardMaterial({ color: 0x8097a2, roughness: 0.38, metalness: 0.08 });
+      if (obj instanceof THREE.Mesh) {
+        obj.material = new THREE.MeshStandardMaterial({ color: 0x8097a2, roughness: 0.38, metalness: 0.08 });
+      }
     });
     root.add(object);
     updateStats(root);
@@ -266,7 +286,8 @@ export default function IndexPage() {
         geo.computeVertexNormals();
         replaceModel(new THREE.Mesh(geo));
       } else if (ext === "3mf") {
-        replaceModel(new ThreeMFLoader().parse(buffer));
+        const group = new ThreeMFLoader().parse(buffer);
+        replaceModel(group);
       } else if (ext === "step" || ext === "stp") {
         throw new Error("STEP/STP parser is the next module. STL and 3MF are active in this build.");
       } else {
@@ -280,17 +301,31 @@ export default function IndexPage() {
     }
   };
 
-  const setRenderMode = (next: RenderMode) => { setMode(next); apiRef.current?.setMode(next); };
+  const setRenderMode = (next: RenderMode) => {
+    setMode(next);
+    apiRef.current?.setMode(next);
+  };
 
   return (
     <main className={styles.appShell}>
       <header className={styles.header}>
-        <div className={styles.brandRow}><div className={styles.brandMark}><ScanLine size={20} /></div><div><div className={styles.brand}>ITIDEAS <span>3D</span></div><div className={styles.subbrand}>INSPECTION VIEWER</div></div></div>
-        <div className={`${styles.status} ${status === "ERROR" ? styles.statusError : ""}`}><span />{status}</div>
+        <div className={styles.brandRow}>
+          <div className={styles.brandMark}><ScanLine size={20} /></div>
+          <div>
+            <div className={styles.brand}>ITIDEAS <span>3D</span></div>
+            <div className={styles.subbrand}>INSPECTION VIEWER</div>
+          </div>
+        </div>
+        <div className={`${styles.status} ${status === "ERROR" ? styles.statusError : ""}`}>
+          <span />{status}
+        </div>
       </header>
 
       <section className={styles.fileBar}>
-        <div className={styles.fileInfo}><div className={styles.fileName}>{fileName}</div><div className={styles.fileMeta}>{fileMeta}</div></div>
+        <div className={styles.fileInfo}>
+          <div className={styles.fileName}>{fileName}</div>
+          <div className={styles.fileMeta}>{fileMeta}</div>
+        </div>
         <Input ref={fileRef} className={styles.hiddenInput} type="file" accept=".stl,.3mf,.step,.stp" onChange={(e) => e.target.files?.[0] && handleFile(e.target.files[0])} />
         <Button size="sm" className={styles.openButton} onClick={() => fileRef.current?.click()}><FileUp size={16} /> Open</Button>
       </section>
@@ -298,7 +333,11 @@ export default function IndexPage() {
       <section className={styles.viewportWrap}>
         <div ref={viewportRef} className={styles.viewport} />
         <div className={styles.viewBadge}>PERSPECTIVE</div>
-        <div className={styles.dimensionHud}><div><span>X</span><strong>{fmt(dims.x)}</strong><em>mm</em></div><div><span>Y</span><strong>{fmt(dims.y)}</strong><em>mm</em></div><div><span>Z</span><strong>{fmt(dims.z)}</strong><em>mm</em></div></div>
+        <div className={styles.dimensionHud}>
+          <div><span>X</span><strong>{fmt(dims.x)}</strong><em>mm</em></div>
+          <div><span>Y</span><strong>{fmt(dims.y)}</strong><em>mm</em></div>
+          <div><span>Z</span><strong>{fmt(dims.z)}</strong><em>mm</em></div>
+        </div>
         {measurement !== null && <div className={styles.measureHud}><Ruler size={15} /><span>{fmt(measurement)} mm</span></div>}
         <div className={styles.viewportTools}>
           <Button variant="secondary" size="icon-sm" onClick={() => apiRef.current?.fit()} aria-label="Fit"><Focus size={17} /></Button>
@@ -309,17 +348,35 @@ export default function IndexPage() {
       </section>
 
       <section className={styles.inspectionStrip}>
-        <div className={styles.statBlock}><span>TRIANGLES</span><strong>{triangles.toLocaleString()}</strong></div>
-        <div className={styles.statBlock}><span>UNITS</span><strong>mm</strong></div>
-        <div className={styles.statBlock}><span>VIEW</span><strong>ISO</strong></div>
+        <div className={styles.statBlock}>
+          <span>TRIANGLES</span><strong>{triangles.toLocaleString()}</strong>
+        </div>
+        <div className={styles.statBlock}>
+          <span>UNITS</span><strong>mm</strong>
+        </div>
+        <div className={styles.statBlock}>
+          <span>VIEW</span><strong>ISO</strong>
+        </div>
         <Button variant="outline" size="sm" onClick={() => apiRef.current?.capture()}><Image size={15} /> Capture</Button>
       </section>
 
       <section className={styles.toolPanel}>
         <div className={styles.panelTitle}>DISPLAY</div>
-        <div className={styles.segmentRow}>{(["solid", "edges", "wireframe"] as RenderMode[]).map((item) => <Button key={item} size="sm" variant={mode === item ? "primary" : "secondary"} onClick={() => setRenderMode(item)}>{item === "solid" ? <Box size={15}/> : item === "edges" ? <Triangle size={15}/> : <Grid3X3 size={15}/>} {item.toUpperCase()}</Button>)}</div>
+        <div className={styles.segmentRow}>
+          {(["solid", "edges", "wireframe"] as RenderMode[]).map((item) => (
+            <Button key={item} size="sm" variant={mode === item ? "primary" : "secondary"} onClick={() => setRenderMode(item)}>
+              {item === "solid" ? <Box size={15}/> : item === "edges" ? <Triangle size={15}/> : <Grid3X3 size={15}/>} {item.toUpperCase()}
+            </Button>
+          ))}
+        </div>
+
         <div className={styles.panelTitle}>STANDARD VIEWS</div>
-        <div className={styles.viewGrid}>{["ISO", "FRONT", "BACK", "LEFT", "RIGHT", "TOP", "BOTTOM"].map((name) => <Button key={name} variant="secondary" size="sm" onClick={() => apiRef.current?.setView(name)}>{name}</Button>)}</div>
+        <div className={styles.viewGrid}>
+          {["ISO", "FRONT", "BACK", "LEFT", "RIGHT", "TOP", "BOTTOM"].map((name) => (
+            <Button key={name} variant="secondary" size="sm" onClick={() => apiRef.current?.setView(name)}>{name}</Button>
+          ))}
+        </div>
+
         <div className={styles.toggleRow}>
           <Toggle pressed={gridOn} onPressedChange={(v) => { setGridOn(v); apiRef.current?.setGrid(v); }}><Grid3X3 size={16}/> Grid</Toggle>
           <Toggle pressed={axesOn} onPressedChange={(v) => { setAxesOn(v); apiRef.current?.setAxes(v); }}><Crosshair size={16}/> XYZ</Toggle>
@@ -327,7 +384,10 @@ export default function IndexPage() {
         </div>
       </section>
 
-      <footer className={styles.footer}><div className={styles.message}><View size={14}/>{message}</div><div className={styles.workflow}>LOAD → FIT/ISO → XYZ → EDGES → MEASURE → CAPTURE</div></footer>
+      <footer className={styles.footer}>
+        <div className={styles.message}><View size={14}/>{message}</div>
+        <div className={styles.workflow}>LOAD → FIT/ISO → XYZ → EDGES → MEASURE → CAPTURE</div>
+      </footer>
     </main>
   );
 }
