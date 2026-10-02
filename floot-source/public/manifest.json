@@ -1,0 +1,9 @@
+{
+  "name": "ITIDEAS 3D Viewer",
+  "short_name": "ITIDEAS 3D",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#070b0f",
+  "theme_color": "#070b0f",
+  "description": "Mobile 3D inspection viewer for STL, 3MF and manufacturing models"
+}
