@@ -1,0 +1,25 @@
+{
+  "name": "itideas-3d-viewer",
+  "private": true,
+  "version": "1.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc -b && vite build",
+    "preview": "vite preview"
+  },
+  "dependencies": {
+    "@vitejs/plugin-react": "latest",
+    "lucide-react": "^0.477.0",
+    "react": "^19.2.1",
+    "react-dom": "^19.2.1",
+    "three": "0.186.1"
+  },
+  "devDependencies": {
+    "@types/react": "latest",
+    "@types/react-dom": "latest",
+    "@types/three": "0.186.0",
+    "typescript": "latest",
+    "vite": "latest"
+  }
+}
