@@ -1,0 +1,142 @@
+    const capture = () => {
+      renderer.render(scene, camera);
+      const a = document.createElement("a");
+      a.href = renderer.domElement.toDataURL("image/png");
+      a.download = `itideas-3d-${Date.now()}.png`;
+      a.click();
+    };
+
+    const clearMeasure = () => {
+      measurementGroup.clear();
+      measurePoints = [];
+      setMeasurement(null);
+    };
+
+    apiRef.current = {
+      fit,
+      setView,
+      setMode: setModeFn,
+      setGrid: (show) => { grid.visible = show; },
+      setAxes: (show) => { axes.visible = show; },
+      capture,
+      clearMeasure,
+    };
+
+    const raycaster = new THREE.Raycaster();
+    const pointer = new THREE.Vector2();
+    let measurePoints: THREE.Vector3[] = [];
+    const handlePointer = (event: PointerEvent) => {
+      if (!measureOn) return;
+      const rect = renderer.domElement.getBoundingClientRect();
+      pointer.x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
+      pointer.y = -((event.clientY - rect.top) / rect.height) * 2 + 1;
+      raycaster.setFromCamera(pointer, camera);
+      const hits = raycaster.intersectObject(modelGroup, true).filter((h) => h.object instanceof THREE.Mesh);
+      if (!hits.length) return;
+      const p = hits[0].point.clone();
+      if (measurePoints.length >= 2) {
+        measurementGroup.clear();
+        measurePoints = [];
+      }
+      measurePoints.push(p);
+      const dot = new THREE.Mesh(new THREE.SphereGeometry(Math.max(getBounds().getSize(new THREE.Vector3()).length() * 0.008, 0.6), 18, 18), new THREE.MeshBasicMaterial({ color: 0x35d5f2 }));
+      dot.position.copy(p);
+      measurementGroup.add(dot);
+      if (measurePoints.length === 2) {
+        const lineGeo = new THREE.BufferGeometry().setFromPoints(measurePoints);
+        measurementGroup.add(new THREE.Line(lineGeo, new THREE.LineBasicMaterial({ color: 0x35d5f2 })));
+        const dist = measurePoints[0].distanceTo(measurePoints[1]);
+        setMeasurement(dist);
+        setMessage(`Measured ${dist.toFixed(2)} mm`);
+      }
+    };
+    renderer.domElement.addEventListener("pointerdown", handlePointer);
+
+    const resize = () => {
+      const w = host.clientWidth;
+      const h = host.clientHeight;
+      if (!w || !h) return;
+      renderer.setSize(w, h, false);
+      camera.aspect = w / h;
+      camera.updateProjectionMatrix();
+    };
+    const ro = new ResizeObserver(resize);
+    ro.observe(host);
+    resize();
+    fit();
+
+    let raf = 0;
+    const loop = () => {
+      controls.update();
+      renderer.render(scene, camera);
+      raf = requestAnimationFrame(loop);
+    };
+    loop();
+
+    return () => {
+      cancelAnimationFrame(raf);
+      ro.disconnect();
+      renderer.domElement.removeEventListener("pointerdown", handlePointer);
+      controls.dispose();
+      renderer.dispose();
+      if (renderer.domElement.parentNode === host) host.removeChild(renderer.domElement);
+      apiRef.current = null;
+    };
+  }, [measureOn]);
+
+  const updateStats = (root: THREE.Object3D) => {
+    const box = new THREE.Box3().setFromObject(root);
+    const size = box.getSize(new THREE.Vector3());
+    setDims({ x: size.x, y: size.y, z: size.z });
+    let count = 0;
+    root.traverse((obj) => {
+      if (obj instanceof THREE.Mesh && obj.geometry) {
+        const pos = obj.geometry.getAttribute("position");
+        count += obj.geometry.index ? obj.geometry.index.count / 3 : pos ? pos.count / 3 : 0;
+      }
+    });
+    setTriangles(Math.round(count));
+  };
+
+  const replaceModel = (object: THREE.Object3D) => {
+    const root = meshRootRef.current;
+    if (!root) return;
+    root.clear();
+    object.traverse((obj) => {
+      if (obj instanceof THREE.Mesh) {
+        obj.material = new THREE.MeshStandardMaterial({ color: 0x8097a2, roughness: 0.38, metalness: 0.08 });
+      }
+    });
+    root.add(object);
+    updateStats(root);
+    apiRef.current?.setMode(mode);
+    requestAnimationFrame(() => apiRef.current?.fit());
+  };
+
+  const handleFile = async (file: File) => {
+    const ext = file.name.split(".").pop()?.toLowerCase();
+    setStatus("LOADING");
+    setMessage(`Reading ${file.name}…`);
+    setFileName(file.name);
+    setFileMeta(`${(file.size / 1024 / 1024).toFixed(2)} MB • local file`);
+    try {
+      const buffer = await file.arrayBuffer();
+      if (ext === "stl") {
+        const geo = new STLLoader().parse(buffer);
+        geo.computeVertexNormals();
+        replaceModel(new THREE.Mesh(geo));
+      } else if (ext === "3mf") {
+        const group = new ThreeMFLoader().parse(buffer);
+        replaceModel(group);
+      } else if (ext === "step" || ext === "stp") {
+        throw new Error("STEP/STP parser is the next module. STL and 3MF are active in this build.");
+      } else {
+        throw new Error("Unsupported file. Choose STL, 3MF, STEP or STP.");
+      }
+      setStatus("READY");
+      setMessage("Model loaded locally • inspect dimensions before production");
+    } catch (err) {
+      setStatus("ERROR");
+      setMessage(err instanceof Error ? err.message : "Could not read this model");
+    }
+  };
