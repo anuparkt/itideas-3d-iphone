@@ -52,7 +52,7 @@ test('real ASCII DXF parser creates inspection geometry with correct units and l
 test('DXF INSERT expands drawing geometry from a referenced BLOCK with scale and rotation',()=>{
  const doc={header:{$INSUNITS:4},
   blocks:{PANEL:{name:'PANEL',position:{x:0,y:0},entities:[
-   {type:'LWPOLYLINE',layer:'CUT',shape:true,vertices:[{x:0,y:0},{x:100,y:0},{x:100,y:50},{x:0,y:50}]}
+   {type:'LWPOLYLINE',layer:'0',shape:true,vertices:[{x:0,y:0},{x:100,y:0},{x:100,y:50},{x:0,y:50}]}
   ]}},
   entities:[{type:'INSERT',layer:'SIGN',name:'PANEL',position:{x:200,y:100},xScale:2,yScale:1,rotation:90}]
  };
