@@ -61,7 +61,7 @@ $('demoDxfBtn').onclick=()=>{
  '0','SECTION','2','ENTITIES','0','LWPOLYLINE','8','CUT','90','4','70','1',
  '10','0','20','0','10','100','20','0','10','100','20','50','10','0','20','50',
  '0','CIRCLE','8','DRILL','10','50','20','25','40','10',
- '0','ENDSEC','0','EOF'].join('\\n');
+ '0','ENDSEC','0','EOF'].join('\n');
  loadFile(new File([sample],'DEMO_100x50_mm.dxf',{type:'application/dxf'}));
 };
 $('openBtn').onclick=()=>$('fileInput').click();$('fileInput').onchange=e=>{const f=e.target.files?.[0];if(f)loadFile(f);e.target.value=''};
