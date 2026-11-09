@@ -12,10 +12,18 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
+      - name: Install dependencies
+        run: npm install --no-audit --no-fund
       - name: Unit tests
         run: npm test
       - name: Prepare Cloudflare Pages static output
         run: npm run build
+      - name: Check browser JS syntax
+        run: |
+          node --check dist/app.js
+          node --check dist/cad2d.js
+          node --check dist/cad-geometry.js
+          node --check dist/dxf-parser.bundle.js
       - uses: actions/upload-artifact@v4
         with:
           name: itideas-cad-viewer-dist

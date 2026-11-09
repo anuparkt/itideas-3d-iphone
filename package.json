@@ -1,11 +1,17 @@
 {
   "name": "itideas-cad-viewer",
-  "version": "2.0.0",
+  "version": "2.0.1",
   "private": true,
   "type": "module",
   "scripts": {
     "test": "node --test tests/*.test.mjs",
     "build": "node scripts/build.mjs"
+  },
+  "dependencies": {
+    "dxf-parser": "1.1.2"
+  },
+  "devDependencies": {
+    "esbuild": "^0.25.12"
   },
   "engines": {
     "node": ">=20"

@@ -163,7 +163,7 @@ function loadDxfParser(){
  return new Promise((resolve,reject)=>{
   if(window.DxfParser){resolve(window.DxfParser);return;}
   const script=document.createElement('script');
-  script.src='https://cdn.jsdelivr.net/npm/dxf-parser@1.1.2/dist/dxf-parser.js';
+  script.src='./dxf-parser.bundle.js';
   script.onload=()=>window.DxfParser?resolve(window.DxfParser):reject(new Error('DXF parser โหลดไม่สำเร็จ'));
   script.onerror=()=>reject(new Error('เชื่อมต่อ DXF parser ไม่ได้ — ตรวจอินเทอร์เน็ต'));document.head.appendChild(script);
  });

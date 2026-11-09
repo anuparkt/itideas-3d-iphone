@@ -37,7 +37,7 @@ For a permanent rollout, test with sample DXF, Illustrator (PDF-compatible), STL
 - `tests/cad-geometry.test.mjs`: geometry tests.
 
 ## Limitations
-- External libraries Three.js, OpenCascade, DXF parser and PDF.js require network access on first use; PWA caching afterward is best effort.
+- The DXF parser is bundled locally during the build. Three.js, OpenCascade and PDF.js still require network access on first use; PWA caching afterward is best effort.
 - STEP engine may use significant memory on older iPhones, especially for large assemblies.
 - DXF arcs and bulges are sampled for rendering, not toolpaths; nested INSERT blocks are not currently rendered.
 - AI rendering supports PDF-compatible format; missing fonts/embedded assets may display differently from Illustrator.
