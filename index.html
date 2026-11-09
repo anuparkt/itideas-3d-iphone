@@ -8,12 +8,12 @@
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
   <meta name="apple-mobile-web-app-title" content="ITIDEAS 3D" />
   <meta name="format-detection" content="telephone=no" />
-  <meta name="description" content="ITIDEAS 3D Preview for iPhone — STL, 3MF, STEP/STP viewer" />
+  <meta name="description" content="ITIDEAS CAD Viewer for iPhone — STL, 3MF, STEP, DXF and AI PDF-compatible" />
   <link rel="manifest" href="./manifest.webmanifest" />
   <link rel="apple-touch-icon" href="./icons/apple-touch-icon.png" />
   <link rel="icon" href="./icons/icon-192.png" />
   <link rel="stylesheet" href="./style.css" />
-  <title>ITIDEAS 3D Preview</title>
+  <title>ITIDEAS CAD Viewer</title>
   <script type="importmap">
   {
     "imports": {
@@ -29,14 +29,14 @@
       <div class="brand">
         <div class="brandmark">3D</div>
         <div class="brandtext">
-          <b>ITIDEAS 3D</b>
-          <small>STL · 3MF · STEP</small>
+          <b>ITIDEAS CAD</b>
+          <small>STL · 3MF · STEP · DXF · AI</small>
         </div>
       </div>
       <div class="top-actions">
         <button id="installBtn" class="icon-btn" aria-label="ติดตั้งแอป" title="ติดตั้งแอป">＋</button>
         <button id="openBtn" class="primary">เปิดไฟล์</button>
-        <input id="fileInput" type="file" hidden />
+        <input id="fileInput" type="file" accept=".stl,.3mf,.step,.stp,.dxf,.ai" hidden />
       </div>
     </header>
 
@@ -47,7 +47,7 @@
           <div class="cube">⬡</div>
           <h1>แตะ “เปิดไฟล์”</h1>
           <p>เลือกไฟล์จาก Files / iCloud Drive</p>
-          <div class="chips"><span>STL</span><span>3MF</span><span>STEP</span><span>STP</span></div>
+          <div class="chips"><span>STL</span><span>3MF</span><span>STEP</span><span>STP</span><span>DXF</span><span>AI</span></div>
         </div>
         <div id="loading" class="loading hidden">
           <div class="spinner"></div>
@@ -86,7 +86,7 @@
             <div><small>Z</small><b id="dimZ">—</b></div>
             <div><small>Triangles</small><b id="triCount">—</b></div>
           </div>
-          <p class="note">หน่วยขนาดแสดงเป็น mm ตามค่าพิกัดในไฟล์ หากต้นฉบับใช้หน่วยอื่นต้องตรวจสอบ scale ก่อนผลิต</p>
+          <p class="note">3D: ตรวจสอบหน่วย/Scale จากไฟล์ต้นฉบับก่อนผลิต · DXF: อ่านหน่วย $INSUNITS · AI: ขนาดหน้า PDF (Artboard) ไม่ใช่ความยาวเส้นไดคัท</p>
         </div>
 
         <div class="tabpane" data-pane="view">
@@ -106,7 +106,7 @@
             <button id="measureBtn" class="primary grow">เริ่มวัด</button>
             <button id="clearMeasureBtn" class="secondary grow">ล้าง</button>
           </div>
-          <p class="note">กด “เริ่มวัด” แล้วแตะผิวโมเดล 2 จุด ระบบจะแสดงระยะเส้นตรงระหว่างจุดเป็น mm</p>
+          <p class="note">3D: แตะผิวโมเดลสองจุด · DXF: แตะสองตำแหน่งบนภาพ 2D พร้อม Snap จุดปลายที่ตรวจพบ · AI: ไม่รองรับการวัดจากภาพพรีวิว</p>
         </div>
 
         <div class="tabpane" data-pane="more">
@@ -117,7 +117,7 @@
             <button id="screenshotBtn" class="secondary">บันทึกภาพ PNG</button>
             <button id="helpInstallBtn" class="secondary">ติดตั้งบน iPhone</button>
           </div>
-          <p class="note">Touch: 1 นิ้วหมุน · 2 นิ้วเลื่อน · pinch ซูมเข้า/ออก</p>
+          <p class="note">3D: หนึ่งนิ้วหมุน / สองนิ้วเลื่อน / pinch ซูม · DXF และ AI: หนึ่งนิ้วเลื่อน / pinch ซูม · ฟังก์ชัน 2D เป็น Preview ตรวจแบบ ไม่ใช่ข้อมูลส่ง CNC โดยตรง</p>
         </div>
       </section>
     </main>
