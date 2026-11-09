@@ -145,3 +145,19 @@ export function drawingFromDxf(doc){
    bounds:{minX,minY,maxX,maxY,width:Math.max(maxX-minX,.0001),height:Math.max(maxY-minY,.0001)},
    unit,entityCount,snapPoints};
 }
+
+/** Read ASCII DXF files safely across UTF-8, ANSI and Windows DXF code pages. */
+export function decodeDxfBytes(data){
+ const bytes=data instanceof Uint8Array?data:new Uint8Array(data);
+ const prefix=new TextDecoder('latin1').decode(bytes.subarray(0,80));
+ if(prefix.startsWith('AutoCAD Binary DXF'))throw new Error('ไฟล์นี้เป็น Binary DXF — โปรด Export เป็น ASCII DXF (R2000/R2010) ก่อนเปิด');
+ const decoder=new TextDecoder('utf-8',{fatal:true});
+ let text;
+ try{text=decoder.decode(bytes);}
+ catch{
+  const header=new TextDecoder('latin1').decode(bytes.subarray(0,2048));
+  const encoding=/ANSI_874|CP874/i.test(header)?'windows-874':'windows-1252';
+  text=new TextDecoder(encoding).decode(bytes);
+ }
+ return text.replace(/^\uFEFF/,'').replace(/^\s+(?=0\s)/,'');
+}

@@ -26,3 +26,7 @@ main{height:calc(100dvh - 62px - var(--safe-top));display:grid;grid-template-row
 .inspection-2d .view-pills{display:none}
 .inspection-2d [data-pane="view"] .setting{display:none}
 @media(max-width:410px){.cad2d-caption{font-size:9px;max-height:41px}.cad2d-tools{bottom:65px}}
+
+.file-error{position:fixed;z-index:45;bottom:calc(12px + env(safe-area-inset-bottom));left:12px;right:12px;max-width:640px;margin:0 auto;color:#ffe0e5;background:#301922;border:1px solid #fb7185;border-radius:14px;padding:15px;box-shadow:0 12px 40px #000a}
+.file-error strong{font-size:15px}.file-error p{white-space:pre-wrap;overflow-wrap:anywhere;line-height:1.5;font-size:12px;margin:8px 0 12px}
+.file-error-actions{display:flex;align-items:center;justify-content:space-between;gap:12px}.file-error-actions span{font-size:10px;color:#f6bac4}

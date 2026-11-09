@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {drawingFromDxf,dxfUnit,isPdfCompatibleAI} from '../cad-geometry.js';
+import {drawingFromDxf,dxfUnit,isPdfCompatibleAI,decodeDxfBytes} from '../cad-geometry.js';
 import DxfParser from 'dxf-parser';
 
 test('DXF unit conversion is explicit and unknown units are not assumed mm',()=>{
@@ -70,4 +70,13 @@ test('DXF SPLINE-only drawing displays sampled geometry without crashing',()=>{
  assert.equal(model.paths.length,1);
  assert.ok(model.bounds.width>99.9);
  assert.ok(model.bounds.height>40);
+});
+
+
+test('decodes UTF-8 BOM DXF before parsing',()=>{
+ const input=new Uint8Array([239,187,191,...new TextEncoder().encode('0\nEOF\n')]);
+ assert.equal(decodeDxfBytes(input),'0\nEOF\n');
+});
+test('gives clear error for Binary DXF',()=>{
+ assert.throws(()=>decodeDxfBytes(new TextEncoder().encode('AutoCAD Binary DXF\r\n')),/Binary DXF/);
 });

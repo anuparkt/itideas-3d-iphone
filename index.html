@@ -13,7 +13,7 @@
   <link rel="apple-touch-icon" href="./icons/apple-touch-icon.png" />
   <link rel="icon" href="./icons/icon-192.png" />
   <link rel="stylesheet" href="./style.css" />
-  <title>ITIDEAS CAD Viewer</title>
+  <title>ITIDEAS CAD Viewer v2.0.3</title>
   <script type="importmap">
   {
     "imports": {
@@ -116,6 +116,7 @@
             <button id="bgBtn" class="secondary">เปลี่ยนพื้นหลัง</button>
             <button id="screenshotBtn" class="secondary">บันทึกภาพ PNG</button>
             <button id="helpInstallBtn" class="secondary">ติดตั้งบน iPhone</button>
+            <button id="demoDxfBtn" class="secondary">ทดลองไฟล์ DXF 100×50 mm</button>
           </div>
           <p class="note">3D: หนึ่งนิ้วหมุน / สองนิ้วเลื่อน / pinch ซูม · DXF และ AI: หนึ่งนิ้วเลื่อน / pinch ซูม · ฟังก์ชัน 2D เป็น Preview ตรวจแบบ ไม่ใช่ข้อมูลส่ง CNC โดยตรง</p>
         </div>
@@ -123,6 +124,11 @@
     </main>
 
     <div id="toast" class="toast hidden"></div>
+    <div id="fileError" class="file-error hidden" role="alert" aria-live="assertive">
+      <strong>เปิดไฟล์ไม่สำเร็จ</strong>
+      <p id="fileErrorDetail"></p>
+      <div class="file-error-actions"><button id="dismissFileError" class="secondary">ปิดข้อความ</button><span>ITIDEAS CAD v2.0.3</span></div>
+    </div>
     <div id="installModal" class="modal hidden" role="dialog" aria-modal="true">
       <div class="modal-card">
         <button id="closeInstall" class="modal-close">×</button>

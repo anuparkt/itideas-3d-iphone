@@ -18,6 +18,8 @@ jobs:
         run: npm test
       - name: Prepare Cloudflare Pages static output
         run: npm run build
+      - name: Smoke test built browser DXF parser
+        run: node --test tests/bundle-smoke.test.mjs
       - name: Check browser JS syntax
         run: |
           node --check dist/app.js

@@ -1,4 +1,4 @@
-import {drawingFromDxf,isPdfCompatibleAI} from './cad-geometry.js';
+import {drawingFromDxf,isPdfCompatibleAI,decodeDxfBytes} from './cad-geometry.js';
 const $=id=>document.getElementById(id);
 const wrap=$('viewerWrap');
 const stage=document.createElement('div');stage.id='cad2dStage';stage.className='cad2d-stage';
@@ -161,18 +161,19 @@ function hide(){
 }
 function loadDxfParser(){
  return new Promise((resolve,reject)=>{
-  if(window.DxfParser){resolve(window.DxfParser);return;}
+  if(typeof window.DxfParser==='function'){resolve(window.DxfParser);return;}
   const script=document.createElement('script');
   script.src='./dxf-parser.bundle.js';
-  script.onload=()=>window.DxfParser?resolve(window.DxfParser):reject(new Error('DXF parser โหลดไม่สำเร็จ'));
+  script.onload=()=>typeof window.DxfParser==='function'?resolve(window.DxfParser):reject(new Error('DXF parser ไม่พร้อมใช้งาน ตรวจว่าตั้งค่า Build output เป็น dist และ Deploy branch cloudflare-independent-cad-viewer'));
   script.onerror=()=>reject(new Error('เชื่อมต่อ DXF parser ไม่ได้ — ตรวจอินเทอร์เน็ต'));document.head.appendChild(script);
  });
 }
 async function loadDXF(file){
  const DxfParser=await loadDxfParser();
- const text=await file.text();
- if(text.startsWith('AutoCAD Binary DXF'))throw new Error('DXF Binary ยังไม่รองรับ กรุณาบันทึก DXF ASCII');
- const parsed=new DxfParser().parseSync(text);
+ const text=decodeDxfBytes(await file.arrayBuffer());
+ let parsed;
+ try{parsed=new DxfParser().parseSync(text);}catch(e){throw new Error('อ่านโครงสร้าง DXF ไม่สำเร็จ: '+(e?.message||'ไม่รู้จักรูปแบบ')+' — ลอง Export เป็น AutoCAD ASCII DXF');}
+ if(!parsed?.entities)throw new Error('DXF ไม่มีส่วน ENTITIES หรือไฟล์อาจเสียหาย');
  const model=drawingFromDxf(parsed);
  drawing=model;clearMeasure();redrawDXF(model);show();
  const u=model.unit;const w=model.bounds.width*(u.factor??1),h=model.bounds.height*(u.factor??1);
