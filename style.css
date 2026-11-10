@@ -94,3 +94,43 @@ main{height:calc(100dvh - 62px - var(--safe-top));grid-template-rows:minmax(180p
 .more-title{margin-top:16px}
 @media(min-width:700px){main{grid-template-rows:minmax(0,1fr) 56px}.cad-layer-list{max-height:50vh}.stats-grid>div:first-child{grid-column:span 3}.inspection-focus main{grid-template-columns:1fr;grid-template-rows:1fr}}
 @media(max-width:370px){.brandtext small{font-size:8px}.top-actions{gap:6px}.primary{padding:0 12px}.cad2d-tools{gap:4px}.cad2d-tools button{padding:6px 8px}}
+
+/* ITIDEAS v2.2 — iPhone Nesting workspace */
+.tabs{grid-template-columns:repeat(5,minmax(0,1fr))}
+.inspection-2d .tabs{grid-template-columns:repeat(5,minmax(0,1fr))}
+.tabs button small{font-size:9px}
+.inspection-nesting main{grid-template-rows:minmax(150px,1fr) 54px minmax(220px,48dvh)}
+.inspection-nesting .sheet{padding-bottom:calc(16px + var(--safe-bottom));scrollbar-width:thin}
+.nest-source-actions{margin-top:12px}
+.nest-source-actions button{font-size:11px;min-height:40px;padding:5px}
+.nest-material-full{margin:12px 0 8px}
+.nest-fields{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px}
+.nest-field{display:flex;flex-direction:column;gap:5px;min-width:0}
+.nest-field span{font-size:10px;color:#9cb4c2}
+.nest-field input,.nest-field select{width:100%;min-width:0;min-height:40px;background:#102532;color:#ebf7f9;border:1px solid #3d5c69;border-radius:9px;padding:8px;font-size:13px;font-variant-numeric:tabular-nums}
+.nest-field select{font-size:11px}
+.nest-check{display:flex;align-items:center;gap:10px;margin:12px 0;font-size:12px;color:#c9e2e8}
+.nest-check input{accent-color:#32bdca;width:19px;height:19px}
+.nest-run{margin:16px 0;min-height:46px;width:100%;font-size:13px}
+.nest-results{margin-top:9px}
+.nest-preview{background:#f8fbff;border-radius:10px;border:3px solid #2c5964;overflow:hidden;max-height:340px;display:flex;align-items:center;justify-content:center;padding:4px}
+.nest-preview svg{display:block;max-height:320px;width:100%;height:auto;aspect-ratio:auto}
+.nest-pager{margin:8px 0 12px}
+.nest-pager button:disabled{opacity:.45}
+.nest-stats{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+.nest-stats>div{border:1px solid #28515c;border-radius:9px;padding:9px;background:#142d39}
+.nest-stats small{display:block;font-size:10px;color:#98b9c6}
+.nest-stats strong{display:block;font-variant-numeric:tabular-nums;font-size:16px;margin-top:4px}
+.nest-price-list{display:grid;gap:3px;margin:8px 0}
+.nest-price-list>div{display:flex;align-items:center;justify-content:space-between;gap:12px;border-bottom:1px solid #2b4350;padding:9px 3px;font-size:11px}
+.nest-price-list b{font-variant-numeric:tabular-nums;font-size:13px;white-space:nowrap}
+.nest-price-list .nest-highlight{background:#173b43;padding:12px 10px;border:1px solid #2f7580;border-radius:9px;color:#c4f8f9}
+.nest-highlight b{font-size:21px}
+.nest-export{grid-template-columns:repeat(2,minmax(0,1fr));margin-bottom:12px}
+.nest-warning{font-size:11px;line-height:1.55;color:#f9c899;background:#382b22;border-left:3px solid #d39a4a;border-radius:6px;padding:10px}
+.nest-warning[hidden]{display:none}
+.chips{flex-wrap:wrap;justify-content:center}
+@media(min-width:700px){
+ .inspection-nesting main{grid-template-columns:minmax(0,1fr) 360px;grid-template-rows:minmax(0,1fr) 56px}
+ .nest-preview{max-height:450px}.nest-preview svg{max-height:430px}
+}

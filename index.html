@@ -13,7 +13,7 @@
   <link rel="apple-touch-icon" href="./icons/apple-touch-icon.png" />
   <link rel="icon" href="./icons/icon-192.png" />
   <link rel="stylesheet" href="./style.css" />
-  <title>ITIDEAS CAD Viewer v2.1.2</title>
+  <title>ITIDEAS CAD Viewer v2.2.0</title>
   <script type="importmap">
   {
     "imports": {
@@ -30,7 +30,7 @@
         <div class="brandmark" aria-hidden="true">ID</div>
         <div class="brandtext">
           <b>ITIDEAS CAD</b>
-          <small>CAD INSPECTION / 2D + 3D</small>
+          <small>CAD INSPECTION / NESTING / CNC</small>
         </div>
       </div>
       <div class="top-actions">
@@ -49,7 +49,7 @@
           <div class="cube">⬡</div>
           <h1>แตะ “เปิดไฟล์”</h1>
           <p>เลือกไฟล์จาก Files / iCloud Drive ได้ทุกประเภท แล้วแอปจะตรวจสอบชนิดไฟล์ให้</p>
-          <div class="chips"><span>STL</span><span>3MF</span><span>STEP</span><span>STP</span><span>DXF</span><span>AI</span></div>
+          <div class="chips"><span>STL</span><span>3MF</span><span>STEP</span><span>DXF</span><span>AI</span><span>OBJ</span><span>GLB</span><span>PLY</span></div>
         </div>
         <div id="loading" class="loading hidden">
           <div class="spinner"></div>
@@ -74,6 +74,7 @@
         <button data-tab="view" class="tab-3d-only"><span aria-hidden="true">◫</span><small>มุมมอง</small></button>
         <button data-tab="layers" class="tab-2d-only" aria-label="ตั้งค่าการมองเห็น Layer"><span aria-hidden="true">▤</span><small>เลเยอร์</small></button>
         <button data-tab="measure"><span>↔</span><small>วัดระยะ</small></button>
+        <button data-tab="nesting"><span aria-hidden="true">▧</span><small>Nesting</small></button>
         <button data-tab="more"><span aria-hidden="true">⇩</span><small>ส่งออก</small></button>
       </nav>
 
@@ -121,6 +122,71 @@
           <p class="note">3D: แตะผิวโมเดลสองจุด · DXF: แตะสองตำแหน่งบนภาพ 2D พร้อม Snap จุดปลายที่ตรวจพบ · AI: ไม่รองรับการวัดจากภาพพรีวิว</p>
         </div>
 
+        <div class="tabpane" data-pane="nesting">
+          <div class="sheet-title"><b>Sheet Nesting / CNC Costing</b><span class="layer-summary">BBOX · PREVIEW</span></div>
+          <p id="nestSourceStatus" class="note">เปิด DXF ที่มี Closed Contours หรือกดตัวอย่าง ABC</p>
+          <div class="action-row nest-source-actions">
+            <button id="nestUseDxfBtn" class="secondary" type="button">ใช้ DXF ที่เปิดอยู่</button>
+            <button id="nestDemoBtn" class="secondary" type="button">ตัวอย่าง A B C</button>
+          </div>
+          <label class="nest-field nest-material-full"><span>วัสดุ / ขนาดแผ่น</span>
+            <select id="nestMaterial">
+              <option value="plaswood10-half">พลาสวูด 10 มม. · ครึ่งแผ่น</option>
+              <option value="plaswood10-full">พลาสวูด 10 มม. · แผ่นเต็ม</option>
+              <option value="custom">กำหนดเอง</option>
+            </select>
+          </label>
+          <div class="nest-fields">
+            <label class="nest-field"><span>กว้างแผ่น (mm)</span><input id="nestSheetW" type="number" min="10" value="1220" inputmode="decimal"></label>
+            <label class="nest-field"><span>ยาวแผ่น (mm)</span><input id="nestSheetH" type="number" min="10" value="1220" inputmode="decimal"></label>
+            <label class="nest-field"><span>หนา (mm)</span><input id="nestThickness" type="number" min=".1" value="10" inputmode="decimal"></label>
+            <label class="nest-field"><span>ราคาแผ่น (฿)</span><input id="nestSheetPrice" type="number" min="0" value="388" inputmode="decimal"></label>
+            <label class="nest-field"><span>ขอบปลอดภัย (mm)</span><input id="nestMargin" type="number" min="0" value="15" inputmode="decimal"></label>
+            <label class="nest-field"><span>ช่องไฟ (mm)</span><input id="nestGap" type="number" min="0" value="12" inputmode="decimal"></label>
+            <label class="nest-field"><span>เผื่อดอก / Kerf (mm)</span><input id="nestKerf" type="number" min="0" value="3" inputmode="decimal"></label>
+            <label class="nest-field"><span>จำนวนชุด</span><input id="nestQuantity" type="number" min="1" max="100" step="1" value="1" inputmode="numeric"></label>
+          </div>
+          <label class="nest-check"><input id="nestRotate" type="checkbox" checked><span>อนุญาตหมุน 0° / 90°</span></label>
+          <div class="sheet-title more-title"><b>ต้นทุนตัดและกำไร</b><span class="layer-summary">THB</span></div>
+          <div class="nest-fields">
+            <label class="nest-field"><span>ค่าตัด / เมตร (฿)</span><input id="nestCutRate" type="number" min="0" value="35" inputmode="decimal"></label>
+            <label class="nest-field"><span>ค่า Setup (฿)</span><input id="nestSetup" type="number" min="0" value="150" inputmode="decimal"></label>
+            <label class="nest-field"><span>ค่าเครื่องมือ (฿)</span><input id="nestTool" type="number" min="0" value="80" inputmode="decimal"></label>
+            <label class="nest-field"><span>เก็บงาน (฿)</span><input id="nestFinishing" type="number" min="0" value="120" inputmode="decimal"></label>
+            <label class="nest-field"><span>Gross Margin (%)</span><input id="nestMarginPct" type="number" min="0" max="85" value="35" inputmode="decimal"></label>
+            <label class="nest-field"><span>VAT (%)</span><input id="nestVat" type="number" min="0" max="30" value="0" inputmode="decimal"></label>
+          </div>
+          <button id="nestRunBtn" class="primary full nest-run" type="button">จัดเรียง + คำนวณราคา</button>
+          <div id="nestResults" class="nest-results hidden">
+            <div class="sheet-title more-title"><b>ผังการจัดเรียง</b><span id="nestPageIndex" class="layer-summary">แผ่น 1 / 1</span></div>
+            <div id="nestPreview" class="nest-preview" role="img" aria-label="ตัวอย่างแผ่นวัสดุและตำแหน่งจัดเรียงชิ้นงาน"></div>
+            <div class="action-row nest-pager"><button id="nestPrevPage" class="secondary" type="button">◀ ก่อนหน้า</button><button id="nestNextPage" class="secondary" type="button">ถัดไป ▶</button></div>
+            <div class="nest-stats">
+              <div><small>แผ่นวัสดุ</small><strong id="nestSheetCount">—</strong></div>
+              <div><small>จำนวนชิ้น</small><strong id="nestPieces">—</strong></div>
+              <div><small>พื้นที่ใช้</small><strong id="nestUtilization">—</strong></div>
+              <div><small>แนวตัดรวม</small><strong id="nestCutLength">—</strong></div>
+            </div>
+            <div class="sheet-title more-title"><b>ต้นทุน / ใบเสนอราคา</b></div>
+            <div class="nest-price-list">
+              <div><span>ต้นทุนตัด CNC</span><b id="nestCutCost">—</b></div>
+              <div><span>ต้นทุนวัสดุ</span><b id="nestMaterialCost">—</b></div>
+              <div><span>ต้นทุนรวม</span><b id="nestTotalCost">—</b></div>
+              <div><span>ราคาขายตาม Margin</span><b id="nestSale">—</b></div>
+              <div class="nest-highlight"><span>เสนอราคาปัดขึ้น</span><b id="nestSaleSuggested">—</b></div>
+              <div><span>ขายเฉพาะงานตัด</span><b id="nestCutOnlySale">—</b></div>
+              <div><span>ราคาขายรวม VAT</span><b id="nestSaleVat">—</b></div>
+            </div>
+            <div class="export-grid nest-export">
+              <button id="nestExportSvgBtn" class="export-btn" type="button" disabled><b>SVG · ตรวจผัง</b><small>เวกเตอร์ขนาดแผ่น</small></button>
+              <button id="nestExportPdfBtn" class="export-btn" type="button" disabled><b>PDF · A4</b><small>ส่งตรวจผัง / ราคา</small></button>
+              <button id="nestExportCsvBtn" class="export-btn" type="button" disabled><b>CSV · Cut List</b><small>รายชื่อและตำแหน่งชิ้นงาน</small></button>
+            </div>
+          </div>
+          <p id="nestWarning" class="nest-warning" role="alert" hidden></p>
+          <p class="note">ราคาอ้างอิงตลาดที่พบ: อักษรพลาสวูด 10 มม. สูง 50 ซม. 320 ฿/ตัว (TP Media, 9 ก.ย. 2568) ไม่ใช่ค่าเฉลี่ยตลาด; ตัวเลขต้นทุนเป็นค่าเริ่มต้นที่แก้ไขได้</p>
+          <p class="note">Nesting ใช้ Bounding Box และเส้นที่ถอดจาก DXF เพื่อประเมินพื้นที่/ราคาเท่านั้น ยังไม่ใช่ CAM และไม่รองรับ Tool Offset, Lead-in/out, Tab, ความแม่นยำ Spline หรือ Closed Contour QA ครบถ้วน</p>
+        </div>
         <div class="tabpane" data-pane="more">
           <div class="sheet-title"><b>ส่งออกไฟล์และเอกสาร</b><span class="layer-summary">EXPORT</span></div>
           <div class="export-grid" role="group" aria-label="เลือกชนิดไฟล์ส่งออก">
@@ -148,7 +214,7 @@
     <div id="fileError" class="file-error hidden" role="alert" aria-live="assertive">
       <strong>เปิดไฟล์ไม่สำเร็จ</strong>
       <p id="fileErrorDetail"></p>
-      <div class="file-error-actions"><button id="dismissFileError" class="secondary">ปิดข้อความ</button><span>ITIDEAS CAD v2.1.2</span></div>
+      <div class="file-error-actions"><button id="dismissFileError" class="secondary">ปิดข้อความ</button><span>ITIDEAS CAD v2.2.0</span></div>
     </div>
     <div id="installModal" class="modal hidden" role="dialog" aria-modal="true">
       <div class="modal-card">
