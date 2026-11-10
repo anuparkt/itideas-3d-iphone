@@ -13,7 +13,7 @@
   <link rel="apple-touch-icon" href="./icons/apple-touch-icon.png" />
   <link rel="icon" href="./icons/icon-192.png" />
   <link rel="stylesheet" href="./style.css" />
-  <title>ITIDEAS CAD Viewer v2.1.1</title>
+  <title>ITIDEAS CAD Viewer v2.1.2</title>
   <script type="importmap">
   {
     "imports": {
@@ -128,6 +128,7 @@
             <button id="exportPrintPdfBtn" class="export-btn" type="button"><b>PDF · 1:1</b><small>เวกเตอร์ขนาดจริงสำหรับงานพิมพ์</small></button>
             <button id="exportSvgBtn" class="export-btn" type="button"><b>SVG</b><small>เส้นเวกเตอร์ DXF ตามเลเยอร์</small></button>
             <button id="exportPngBtn" class="export-btn" type="button"><b>PNG</b><small>ภาพพรีวิวความละเอียดสูง</small></button>
+            <button id="exportStlBtn" class="export-btn" type="button"><b>STL · 3D</b><small>โมเดลตาข่ายสำหรับ Slicer</small></button>
           </div>
           <p id="exportHint" class="note export-hint" role="status">DXF รองรับ PDF เวกเตอร์และ SVG ส่วนภาพ 3D รองรับ PDF ตรวจแบบและ PNG · การแปลงพรีวิวไม่ใช่การสร้าง Toolpath</p>
           <div class="sheet-title more-title"><b>เครื่องมือ</b></div>
@@ -147,7 +148,7 @@
     <div id="fileError" class="file-error hidden" role="alert" aria-live="assertive">
       <strong>เปิดไฟล์ไม่สำเร็จ</strong>
       <p id="fileErrorDetail"></p>
-      <div class="file-error-actions"><button id="dismissFileError" class="secondary">ปิดข้อความ</button><span>ITIDEAS CAD v2.1.1</span></div>
+      <div class="file-error-actions"><button id="dismissFileError" class="secondary">ปิดข้อความ</button><span>ITIDEAS CAD v2.1.2</span></div>
     </div>
     <div id="installModal" class="modal hidden" role="dialog" aria-modal="true">
       <div class="modal-card">

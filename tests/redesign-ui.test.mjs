@@ -45,3 +45,10 @@ test("export buttons are connected to a runtime export handler",()=>{
  assert.match(app,/exportFile\('svg'\)/);
  assert.match(app,/exportFile\('png'\)/);
 });
+
+test("3D print export uses three.js STLExporter and warns about unitless STL",()=>{
+ assert.match(html,/id="exportStlBtn"/);
+ assert.match(app,/STLExporter/);
+ assert.match(app,/exportFile\('stl'\)/);
+ assert.match(app,/STL ไม่มีข้อมูลหน่วย/);
+});

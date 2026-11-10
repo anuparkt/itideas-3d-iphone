@@ -1,6 +1,7 @@
 import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import { STLLoader } from 'three/addons/loaders/STLLoader.js';
+import { STLExporter } from 'three/addons/exporters/STLExporter.js';
 import { ThreeMFLoader } from 'three/addons/loaders/3MFLoader.js';
 import {cad2d,loadCad2D} from './cad2d.js';
 import {exportSvg,exportPrintPdf,exportReviewPdf,exportJpegReviewPdf,choosePreviewPixels} from './cad-export.js';
@@ -99,10 +100,11 @@ function syncExportButtons(){
  $('exportPrintPdfBtn').disabled=!(isDxf||isAi);
  $('exportSvgBtn').disabled=!isDxf;
  $('exportPngBtn').disabled=!canExport;
+ $('exportStlBtn').disabled=!modelRoot||mode2d;
  $('exportHint').textContent=isDxf
   ?'DXF: PDF 1:1 คงขนาดเส้นตามหน่วยในไฟล์, SVG เวกเตอร์; PNG เป็นภาพพรีวิวจำกัดความละเอียด · ตรวจเส้นโค้งและข้อความใน CAD ก่อนผลิต'
   :isAi?'AI: PDF 1:1 คัดลอกหน้าต้นฉบับแบบ PDF-compatible; PDF A4 เป็นภาพส่งตรวจ ส่วน PNG เป็นภาพพรีวิว'
-  :modelRoot?'3D: ส่งออก PDF A4 พร้อมภาพตรวจโมเดล และ PNG มุมมองปัจจุบัน · ไม่ใช่ไฟล์พิมพ์ 3D'
+  :modelRoot?'3D: ส่งออก STL สำหรับ Slicer, PDF A4 ส่งตรวจ และ PNG มุมมองปัจจุบัน · STL ไม่มีหน่วย ต้องตรวจสเกลก่อนพิมพ์ 3D'
   :'เปิดไฟล์ CAD ก่อนส่งออก · PDF 1:1 และ SVG ใช้ได้เมื่อมีข้อมูลแบบ 2D';
 }
 async function pngFromSvg(svg,model){
@@ -126,7 +128,13 @@ async function exportFile(kind){
  $('fileError').classList.add('hidden');
  setLoading(true,'กำลังส่งออกไฟล์…','ตรวจขนาดและสร้างเอกสาร');
  try{
-  if(kind==='svg'){
+  if(kind==='stl'){
+   if(!modelRoot||mode2d)throw Error('STL สำหรับพิมพ์ 3D ต้องเปิดโมเดล 3D ก่อน');
+   modelRoot.updateMatrixWorld(true);
+   const data=new STLExporter().parse(modelRoot,{binary:true});
+   downloadBytes(data,'model/stl',exportFilename(file,'3D_PRINT','stl'));
+   $('exportHint').textContent='STL ไม่มีข้อมูลหน่วย: เปิดใน Slicer เพื่อตรวจ X/Y/Z, ความหนาผนังและ Scale ก่อนพิมพ์จริง';
+  }else if(kind==='svg'){
    if(!model)throw Error('SVG เวกเตอร์รองรับไฟล์ DXF เท่านั้น');
    downloadBytes(exportSvg(model,visible),'image/svg+xml',exportFilename(file,'VECTOR','svg'));
   }else if(kind==='print'){
@@ -172,6 +180,7 @@ $('exportReviewPdfBtn').onclick=()=>exportFile('review');
 $('exportPrintPdfBtn').onclick=()=>exportFile('print');
 $('exportSvgBtn').onclick=()=>exportFile('svg');
 $('exportPngBtn').onclick=()=>exportFile('png');
+$('exportStlBtn').onclick=()=>exportFile('stl');
 syncExportButtons();
 
 document.querySelectorAll('.tabs button').forEach(btn=>btn.onclick=()=>{document.querySelectorAll('.tabs button').forEach(b=>b.classList.toggle('active',b===btn));document.querySelectorAll('.tabpane').forEach(p=>p.classList.toggle('active',p.dataset.pane===btn.dataset.tab))});
