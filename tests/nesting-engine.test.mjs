@@ -7,7 +7,8 @@ test('extract closed parts from DXF, keep inner holes grouped and ignore open co
  const model=drawingFromDxf({header:{$INSUNITS:4},entities:[
  {type:'LWPOLYLINE',layer:'CUT_OUTER',shape:true,vertices:[{x:0,y:0},{x:150,y:0},{x:150,y:120},{x:0,y:120}]},
  {type:'CIRCLE',layer:'CUT_INNER',center:{x:70,y:60},radius:15},
- {type:'LINE',layer:'SAW_GUIDE',vertices:[{x:0,y:150},{x:250,y:150}]}
+ {type:'LINE',layer:'SAW_GUIDE',vertices:[{x:0,y:150},{x:250,y:150}]},
+ {type:'LINE',layer:'CUT_OUTER',vertices:[{x:160,y:150},{x:250,y:150}]}
  ]});
  const result=extractCutParts(model,new Set(['CUT_OUTER','CUT_INNER','SAW_GUIDE']));
  assert.equal(result.parts.length,1);
