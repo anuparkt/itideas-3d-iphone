@@ -4,7 +4,7 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "test": "node --test tests/cad-geometry.test.mjs",
+    "test": "node --test tests/cad-geometry.test.mjs tests/file-picker.test.mjs",
     "build": "node scripts/build.mjs"
   },
   "dependencies": {
