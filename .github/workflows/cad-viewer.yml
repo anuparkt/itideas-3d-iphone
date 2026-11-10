@@ -1,7 +1,7 @@
 name: CAD Viewer tests and static build
 on:
   push:
-    branches: [cloudflare-independent-cad-viewer]
+    branches: [cloudflare-independent-cad-viewer, cad-v2.3-design-cnc-qa]
   pull_request:
     branches: [main]
 jobs:
@@ -20,9 +20,13 @@ jobs:
         run: npm run build
       - name: Smoke test built browser DXF parser
         run: node --test tests/bundle-smoke.test.mjs
+      - name: Verify production bundle and offline static assets
+        run: node --test tests/build-artifact.test.mjs
       - name: Check browser JS syntax
         run: |
           node --check dist/app.js
+          node --check dist/app.bundle.js
+          node --check dist/cnc-quality.js
           node --check dist/cad2d.js
           node --check dist/cad-geometry.js
           node --check dist/dxf-parser.bundle.js

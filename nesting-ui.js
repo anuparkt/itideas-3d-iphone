@@ -1,5 +1,7 @@
 import {extractCutParts,packParts,estimateCncQuote,sampleABC,exportNestingSvg} from './nesting-engine.js';
 import {exportJpegReviewPdf} from './cad-export.js';
+import {loadNestingPreferences,saveNestingPreferences} from './nesting-preferences.js';
+import {preflightDxf,packPolygonAware,offsetToolpathPreview} from './cnc-quality.js';
 
 const $=id=>document.getElementById(id);
 const money=v=>new Intl.NumberFormat('th-TH',{maximumFractionDigits:0}).format(v);
@@ -46,8 +48,26 @@ async function svgToJpeg(svg){
  }finally{URL.revokeObjectURL(url);}
 }
 export function setupNestingUI({cad2d,showToast=()=>{},showFileError=()=>{}}){
- let sourceMode='dxf',lastResult=null,fileName='CAD-DXF',layoutPage=0;
+ let sourceMode='dxf',lastResult=null,fileName='CAD-DXF',layoutPage=0,offsetMode=false,lastQA=null;
  const panel=$('nestResults'),preview=$('nestPreview');
+ const preferenceIds=['nestMaterial','nestAlgorithm','nestSheetW','nestSheetH','nestSheetPrice','nestThickness',
+  'nestGap','nestKerf','nestMargin','nestQuantity','nestRotate','nestCutRate','nestSetup','nestTool',
+  'nestFinishing','nestMarginPct','nestVat'];
+ function persistPreferences(){
+  try{
+   const values=Object.fromEntries(preferenceIds.map(id=>[id,id==='nestRotate'?$(id).checked:$(id).value]));
+   saveNestingPreferences(window.localStorage,values);
+  }catch{/* Private browsing storage can be unavailable; continue normally. */}
+ }
+ function restorePreferences(){
+  try{
+   const saved=loadNestingPreferences(window.localStorage);
+   for(const [id,value] of Object.entries(saved)){
+    const el=$(id);if(!el)continue;
+    if(id==='nestRotate')el.checked=value;else el.value=String(value);
+   }
+  }catch{/* Storage is optional. */}
+ }
  const setSummary=s=>{$('nestSourceStatus').textContent=s;};
  const err=(e)=>{
   $('nestWarning').textContent=e.message;
@@ -65,6 +85,31 @@ export function setupNestingUI({cad2d,showToast=()=>{},showFileError=()=>{}}){
   lastResult=null;preview.replaceChildren();panel.classList.add('hidden');
   $('nestWarning').hidden=true;
   $('nestExportSvgBtn').disabled=true;$('nestExportPdfBtn').disabled=true;$('nestExportCsvBtn').disabled=true;
+  offsetMode=false;$('nestOffsetPreviewBtn').disabled=true;
+  $('nestOffsetPreviewBtn').setAttribute('aria-pressed','false');
+  $('nestOffsetPreviewBtn').textContent='แสดง Tool Offset Preview (ไม่ใช่ CAM)';
+  $('nestSafetyStatus').textContent='สถานะ: PREVIEW ONLY — ยังไม่ใช่ไฟล์สำหรับสั่ง CNC';
+ }
+ function renderQA(report){
+  lastQA=report;
+  const badge=$('nestPreflightSummary'),output=$('nestPreflight');
+  if(!report){badge.textContent='ยังไม่ได้ตรวจ';badge.dataset.status='idle';output.textContent='ตรวจเส้นปิด เส้นซ้ำ เส้นตัดกัน และหน่วยไฟล์ก่อนจัดเรียง';return;}
+  badge.textContent=report.errors.length+' errors · '+report.warnings.length+' warnings';
+  badge.dataset.status=report.passed?'pass':'fail';
+  const items=[...report.errors.map(e=>'ต้องแก้ ['+e.code+'] '+e.message),
+   ...report.warnings.map(w=>'ตรวจเพิ่ม ['+w.code+'] '+w.message)];
+  output.textContent=report.summary+'\n'+(items.length?items.join('\n'):'ตรวจเส้นปิดผ่านเบื้องต้น ไม่มีข้อผิดพลาดที่ตรวจพบ');
+  $('nestSafetyStatus').textContent=report.passed
+   ? 'Preflight ผ่านเบื้องต้น · ยังต้องตรวจ Toolpath, Dogbone, Tabs และจุดจับยึดใน CAM'
+   : 'CAM NOT READY — มีข้อผิดพลาด Geometry '+report.errors.length+' รายการ ห้ามใช้เป็นไฟล์สั่งตัด';
+ }
+ function checkQA(){
+  try{
+   if(sourceMode==='demo'){renderQA(null);$('nestPreflight').textContent='ABC เป็นกรอบสมมติ ใช้ประเมินราคาเท่านั้น ไม่มีเส้นตัวอักษรจริง';return null;}
+   if(!cad2d.active||!cad2d.drawing)throw Error('กรุณาเปิดไฟล์ DXF ก่อนตรวจ');
+   const qa=preflightDxf(cad2d.drawing,cad2d.visibleLayers,{toolDiameter:n('nestKerf')});
+   renderQA(qa);return qa;
+  }catch(e){renderQA(null);err(e);return null;}
  }
  function options(){
   return {
@@ -86,9 +131,34 @@ export function setupNestingUI({cad2d,showToast=()=>{},showFileError=()=>{}}){
   if(!data.parts.length)throw Error('ไม่พบเส้น Closed Contour ที่ใช้ Nesting ได้ ตรวจ Layer CUT_OUTER / CUT_INNER หรือเส้นแบบต้นฉบับ');
   return data;
  }
+ function offsetSvgLayer(nest,index,diameter){
+  if(!(diameter>0))return '';
+  let rendered='',offsets=0,skipped=0;
+  for(const p of nest.placements.filter(p=>p.sheetIndex===index)){
+   if(p.estimated){skipped++;continue;}
+   for(const contour of p.contours||[]){
+    let polygons=[];
+    try{polygons=offsetToolpathPreview(contour.points,diameter,contour.isHole?'inside':'outside');}
+    catch{skipped++;continue;}
+    for(const polygon of polygons){
+     const coords=polygon.map(q=>{
+      const pt=p.rotation===90?{x:p.sourceHeight-q.y,y:q.x}:q;
+      return {x:p.x+pt.x,y:p.y+pt.y};
+     });
+     rendered+='<path d="'+coords.map((q,i)=>(i?'L':'M')+Number(q.x.toFixed(3))+' '+Number(q.y.toFixed(3))).join(' ')+' Z" fill="none" stroke="#D55D4A" stroke-width="1.2" stroke-dasharray="6 4"/>';
+     offsets++;
+    }
+   }
+  }
+  if(skipped)$('nestWarning').textContent+=' · Tool Offset ไม่สมบูรณ์ '+skipped+' Contour ตรวจรูและขนาดดอกตัดใน CAM';
+  if(!offsets)return '<text x="15" y="30" font-size="12" fill="#B91C1C">OFFSET UNAVAILABLE / NOT FOR CNC</text>';
+  return '<g data-preview="tool-offset" aria-label="Tool radius compensation preview">'+rendered+
+    '<text x="15" y="30" font-size="12" font-family="monospace" fill="#B91C1C">TOOL CENTRE PREVIEW ONLY · NOT FOR CNC</text></g>';
+ }
  function showPage(index){
   const nest=lastResult.nest;layoutPage=Math.max(0,Math.min(nest.sheetCount-1,index));
-  const svg=exportNestingSvg(nest,layoutPage);
+  let svg=exportNestingSvg(nest,layoutPage);
+  if(offsetMode&&sourceMode!=='demo')svg=svg.replace('</svg>',offsetSvgLayer(nest,layoutPage,n('nestKerf'))+'</svg>');
   preview.innerHTML=svg;
   $('nestPageIndex').textContent='แผ่น '+(layoutPage+1)+' / '+nest.sheetCount;
   $('nestPrevPage').disabled=layoutPage<=0;
@@ -99,7 +169,13 @@ export function setupNestingUI({cad2d,showToast=()=>{},showFileError=()=>{}}){
   reset();
   try{
    const source=readParts();
-   const nest=packParts(source.parts,{...options(),warnings:source.warnings});
+   const qa=sourceMode==='demo'?null:checkQA();
+   if(sourceMode!=='demo'&&!qa)throw Error('ยังตรวจ Geometry ไม่สำเร็จ');
+   if(qa?.errors?.length)throw Error('พบปัญหา Geometry '+qa.errors.length+' รายการ กรุณาแก้ DXF ก่อน Nesting');
+   const algorithm=$('nestAlgorithm').value;
+   const nest=algorithm==='polygon'
+     ?packPolygonAware(source.parts,{...options(),warnings:source.warnings})
+     :packParts(source.parts,{...options(),warnings:source.warnings});
    if(!nest.placements.length)throw Error('ไม่มีชิ้นงานสำหรับจัดเรียง');
    const quote=estimateCncQuote(nest,quoteOptions());
    lastResult={nest,quote,source,material:$('nestMaterial').value,thickness:n('nestThickness'),fileName};
@@ -125,10 +201,15 @@ export function setupNestingUI({cad2d,showToast=()=>{},showFileError=()=>{}}){
    }
    const notes=[...(source.warnings||[])];
    if(nest.isEstimate)notes.unshift('ตัวอย่าง ABC ใช้กรอบสี่เหลี่ยมสมมติ ไม่ใช่ทรงตัวอักษรจริง');
-   notes.push('จัดเรียงแบบ Bounding Box ไม่ใช่ True-Shape Nesting; ต้องตรวจ CAM ก่อนตัดจริง');
+   notes.push(algorithm==='polygon'
+     ?'Polygon-aware Beta: คำนวณการชนตามขอบ Polygon และเผื่อช่องไฟ แต่ไม่ใช่ CAM/True-NFP ที่ปรับเหมาะสมที่สุด'
+     :'จัดเรียงแบบ Bounding Box เป็นการจัดวางแบบอนุรักษนิยม ไม่ใช่ True-Shape Nesting');
+   notes.push('ตรวจ Toolpath, Dogbone, Tabs, จุดจับยึด และดอกตัดจริงใน CAM ก่อนผลิต');
    $('nestWarning').hidden=false;$('nestWarning').textContent=notes.join(' · ');
    panel.classList.remove('hidden');
    $('nestExportSvgBtn').disabled=false;$('nestExportPdfBtn').disabled=false;$('nestExportCsvBtn').disabled=false;
+   $('nestOffsetPreviewBtn').disabled=nest.isEstimate;
+   $('nestSafetyStatus').textContent='INSPECTION ONLY · '+(qa?.passed?'Preflight เบื้องต้นผ่าน':'ไฟล์ตัวอย่าง')+' · NOT CAM-READY';
    showPage(0);
    showToast('จัดเรียงและคำนวณราคาแล้ว');
   }catch(e){err(e);}
@@ -154,8 +235,23 @@ export function setupNestingUI({cad2d,showToast=()=>{},showFileError=()=>{}}){
    showToast('ไฟล์ '+format.toUpperCase()+' พร้อมบันทึกใน Files');
   }catch(e){showFileError({name:lastResult.fileName},e);err(e);}
  }
- $('nestDemoBtn').onclick=()=>{sourceMode='demo';fileName='ABC_500mm_SAMPLE';sync();run();};
- $('nestUseDxfBtn').onclick=()=>{sourceMode='dxf';reset();sync();};
+ $('nestDemoBtn').onclick=()=>{sourceMode='demo';fileName='ABC_500mm_SAMPLE';$('nestAlgorithm').value='bbox';persistPreferences();renderQA(null);sync();run();};
+ $('nestUseDxfBtn').onclick=()=>{sourceMode='dxf';reset();renderQA(null);sync();};
+ $('nestPreflightBtn').onclick=checkQA;
+ $('nestAlgorithm').addEventListener('change',()=>{
+  reset();sync();
+  if(sourceMode==='demo'&&$('nestAlgorithm').value==='polygon'){
+    $('nestPreflight').textContent='ตัวอย่าง ABC ไม่มีเส้นตัวอักษร — ใช้ Bounding Box หรือเปิดไฟล์ DXF ที่ Outline แล้ว';
+  }
+ });
+ $('nestOffsetPreviewBtn').onclick=()=>{
+  if(!lastResult||lastResult.nest.isEstimate)return;
+  offsetMode=!offsetMode;
+  const button=$('nestOffsetPreviewBtn');
+  button.setAttribute('aria-pressed',String(offsetMode));
+  button.textContent=offsetMode?'ซ่อน Tool Offset Preview':'แสดง Tool Offset Preview (ไม่ใช่ CAM)';
+  showPage(layoutPage);
+ };
  $('nestRunBtn').onclick=run;
  $('nestPrevPage').onclick=()=>showPage(layoutPage-1);
  $('nestNextPage').onclick=()=>showPage(layoutPage+1);
@@ -171,14 +267,14 @@ export function setupNestingUI({cad2d,showToast=()=>{},showFileError=()=>{}}){
    $('nestSheetW').value=1220;$('nestSheetH').value=2440;
    $('nestSheetPrice').value=776;$('nestThickness').value=10;
   }
-  reset();sync();
+  reset();sync();persistPreferences();
  };
- const inputs=['nestSheetW','nestSheetH','nestSheetPrice','nestThickness','nestGap','nestKerf','nestMargin',
+ const inputs=['nestAlgorithm','nestSheetW','nestSheetH','nestSheetPrice','nestThickness','nestGap','nestKerf','nestMargin',
    'nestQuantity','nestRotate','nestCutRate','nestSetup','nestTool','nestFinishing','nestMarginPct','nestVat'];
- for(const id of inputs)$(id).addEventListener('change',()=>{if(lastResult){reset();setSummary('ปรับข้อมูลแล้ว · กด “คำนวณ Nesting” อีกครั้ง');}});
- sync();reset();
+ for(const id of inputs)$(id).addEventListener('change',()=>{persistPreferences();if(lastResult){reset();setSummary('ปรับข้อมูลแล้ว · กด “คำนวณ Nesting” อีกครั้ง');}});
+ restorePreferences();sync();reset();renderQA(null);
  return {onFileLoaded(type){
-  if(type==='dxf'){sourceMode='dxf';fileName=cad2d.originalFile?.name||'CAD-DXF';reset();sync();}
-  else if(type!=='dxf'){reset();sourceMode='dxf';sync();}
+  if(type==='dxf'){sourceMode='dxf';fileName=cad2d.originalFile?.name||'CAD-DXF';reset();renderQA(null);sync();}
+  else if(type!=='dxf'){reset();sourceMode='dxf';renderQA(null);sync();}
  },get lastResult(){return lastResult;}};
 }

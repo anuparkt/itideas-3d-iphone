@@ -8,20 +8,13 @@
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
   <meta name="apple-mobile-web-app-title" content="ITIDEAS 3D" />
   <meta name="format-detection" content="telephone=no" />
-  <meta name="description" content="ITIDEAS CAD Viewer for iPhone — STL, 3MF, STEP, DXF and AI PDF-compatible" />
+  <meta name="description" content="ITIDEAS CAD Inspection, CNC preflight and sheet nesting for iPhone and desktop" />
   <link rel="manifest" href="./manifest.webmanifest" />
   <link rel="apple-touch-icon" href="./icons/apple-touch-icon.png" />
   <link rel="icon" href="./icons/icon-192.png" />
   <link rel="stylesheet" href="./style.css" />
-  <title>ITIDEAS CAD Viewer v2.2.0</title>
-  <script type="importmap">
-  {
-    "imports": {
-      "three": "https://cdn.jsdelivr.net/npm/three@0.180.0/build/three.module.js",
-      "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.180.0/examples/jsm/"
-    }
-  }
-  </script>
+  <link rel="stylesheet" href="./design.css" />
+  <title>ITIDEAS CAD Viewer v2.3.0</title>
 </head>
 <body>
   <div id="app">
@@ -29,13 +22,13 @@
       <div class="brand">
         <div class="brandmark" aria-hidden="true">ID</div>
         <div class="brandtext">
-          <b>ITIDEAS CAD</b>
-          <small>CAD INSPECTION / NESTING / CNC</small>
+          <b>ITIDEAS <span class="brandtext-muted">/ CAD</span></b>
+          <small>INSPECT · NEST · ESTIMATE</small>
         </div>
       </div>
       <div class="top-actions">
         <button id="installBtn" class="icon-btn" aria-label="ติดตั้งแอป" title="ติดตั้งแอป">＋</button>
-        <button id="openBtn" class="primary">เปิดไฟล์</button>
+        <button id="openBtn" class="primary" type="button"><span aria-hidden="true">＋</span> เปิดไฟล์</button>
         <!-- iOS Files may disable .dxf for an unrecognized UTI when accept is set.
              Allow all files in the picker; loadFile() validates extensions itself. -->
         <input id="fileInput" type="file" hidden aria-label="เลือกไฟล์ CAD จาก Files" />
@@ -43,7 +36,8 @@
     </header>
 
     <main>
-      <section id="viewerWrap" class="viewer-wrap">
+      <section id="viewerWrap" class="viewer-wrap" aria-label="พื้นที่ตรวจแบบ CAD">
+        <div class="viewport-ruler" aria-hidden="true"><span>ITIDEAS / DESIGN WORKSPACE</span><span>UNIT: mm · VERIFY IN CAD</span></div>
         <div id="viewer"></div>
         <div id="emptyState" class="empty-state">
           <div class="cube">⬡</div>
@@ -69,18 +63,18 @@
         </div>
       </section>
 
-      <nav class="tabs" aria-label="เครื่องมือ">
-        <button data-tab="info" class="active"><span>ⓘ</span><small>ข้อมูล</small></button>
-        <button data-tab="view" class="tab-3d-only"><span aria-hidden="true">◫</span><small>มุมมอง</small></button>
-        <button data-tab="layers" class="tab-2d-only" aria-label="ตั้งค่าการมองเห็น Layer"><span aria-hidden="true">▤</span><small>เลเยอร์</small></button>
-        <button data-tab="measure"><span>↔</span><small>วัดระยะ</small></button>
-        <button data-tab="nesting"><span aria-hidden="true">▧</span><small>Nesting</small></button>
-        <button data-tab="more"><span aria-hidden="true">⇩</span><small>ส่งออก</small></button>
+      <nav class="tabs" aria-label="เครื่องมือ" role="tablist">
+        <button type="button" role="tab" aria-selected="true" id="tab-info" aria-controls="panel-info" data-tab="info" class="active"><span>ⓘ</span><small>ข้อมูล</small></button>
+        <button type="button" role="tab" aria-selected="false" id="tab-view" aria-controls="panel-view" data-tab="view" class="tab-3d-only"><span aria-hidden="true">◫</span><small>มุมมอง</small></button>
+        <button type="button" role="tab" aria-selected="false" id="tab-layers" aria-controls="panel-layers" data-tab="layers" class="tab-2d-only" aria-label="ตั้งค่าการมองเห็น Layer"><span aria-hidden="true">▤</span><small>เลเยอร์</small></button>
+        <button type="button" role="tab" aria-selected="false" id="tab-measure" aria-controls="panel-measure" data-tab="measure"><span>↔</span><small>วัดระยะ</small></button>
+        <button type="button" role="tab" aria-selected="false" id="tab-nesting" aria-controls="panel-nesting" data-tab="nesting"><span aria-hidden="true">▧</span><small>Nesting</small></button>
+        <button type="button" role="tab" aria-selected="false" id="tab-more" aria-controls="panel-more" data-tab="more"><span aria-hidden="true">⇩</span><small>ส่งออก</small></button>
       </nav>
 
-      <section class="sheet" id="toolSheet">
+      <section class="sheet" id="toolSheet" aria-label="แผงตรวจแบบและเครื่องมือ">
         <div class="sheet-handle"></div>
-        <div class="tabpane active" data-pane="info">
+        <div class="tabpane active" data-pane="info" id="panel-info" role="tabpanel" aria-labelledby="tab-info" tabindex="0">
           <div class="sheet-title"><b>ข้อมูลโมเดล</b><span id="formatBadge" class="badge">—</span></div>
           <div class="stats-grid">
             <div><small>ชื่อไฟล์</small><b id="fileName">—</b></div>
@@ -93,7 +87,7 @@
           <p class="note">ตรวจสเกลและหน่วยจากไฟล์ CAD ต้นฉบับก่อนผลิตจริง · DXF เป็นภาพพรีวิว ไม่ใช่ Toolpath สำหรับ CNC</p>
         </div>
 
-        <div class="tabpane" data-pane="layers">
+        <div class="tabpane" data-pane="layers" id="panel-layers" role="tabpanel" aria-labelledby="tab-layers" tabindex="0">
           <div class="sheet-title"><b>จัดการเลเยอร์ DXF</b><span id="cadLayerSummary" class="layer-summary">ยังไม่มี DXF</span></div>
           <div class="layer-actions">
             <button id="cadLayersShowAll" class="secondary" type="button">แสดงทั้งหมด</button>
@@ -102,7 +96,7 @@
           <div id="cadLayerList" class="cad-layer-list" role="group" aria-label="รายการเลเยอร์ DXF"></div>
           <p class="note">แตะสวิตช์เพื่อเปิดหรือปิดเลเยอร์บนแบบ การซ่อนเลเยอร์มีผลเฉพาะหน้าพรีวิวและไฟล์ที่ส่งออก</p>
         </div>
-        <div class="tabpane" data-pane="view">
+        <div class="tabpane" data-pane="view" id="panel-view" role="tabpanel" aria-labelledby="tab-view" tabindex="0">
           <div class="sheet-title"><b>การแสดงผล</b></div>
           <label class="setting"><span>กล้อง</span><select id="cameraMode"><option value="perspective">Perspective</option><option value="orthographic">Orthographic</option></select></label>
           <label class="setting"><span>โหมด</span><select id="renderMode"><option value="edges">Solid + Edges</option><option value="solid">Solid</option><option value="wireframe">Wireframe</option></select></label>
@@ -112,7 +106,7 @@
           <label class="setting switchrow"><span>หมุนอัตโนมัติ</span><input id="autoRotate" type="checkbox" /></label>
         </div>
 
-        <div class="tabpane" data-pane="measure">
+        <div class="tabpane" data-pane="measure" id="panel-measure" role="tabpanel" aria-labelledby="tab-measure" tabindex="0">
           <div class="sheet-title"><b>วัดระยะ 2 จุด</b></div>
           <div id="measureReadout" class="measure-box">ระยะ: —</div>
           <div class="action-row">
@@ -122,13 +116,24 @@
           <p class="note">3D: แตะผิวโมเดลสองจุด · DXF: แตะสองตำแหน่งบนภาพ 2D พร้อม Snap จุดปลายที่ตรวจพบ · AI: ไม่รองรับการวัดจากภาพพรีวิว</p>
         </div>
 
-        <div class="tabpane" data-pane="nesting">
-          <div class="sheet-title"><b>Sheet Nesting / CNC Costing</b><span class="layer-summary">BBOX · PREVIEW</span></div>
+        <div class="tabpane" data-pane="nesting" id="panel-nesting" role="tabpanel" aria-labelledby="tab-nesting" tabindex="0">
+          <div class="sheet-title"><b>Nesting / CNC Costing</b><span class="layer-summary">INSPECTION v2.3</span></div>
+          <p class="workflow-kicker">01 / SOURCE & PREFLIGHT</p>
           <p id="nestSourceStatus" class="note">เปิด DXF ที่มี Closed Contours หรือกดตัวอย่าง ABC</p>
           <div class="action-row nest-source-actions">
-            <button id="nestUseDxfBtn" class="secondary" type="button">ใช้ DXF ที่เปิดอยู่</button>
-            <button id="nestDemoBtn" class="secondary" type="button">ตัวอย่าง A B C</button>
+            <button id="nestUseDxfBtn" class="secondary" type="button">ใช้ DXF ปัจจุบัน</button>
+            <button id="nestDemoBtn" class="secondary" type="button">ทดลอง A B C</button>
           </div>
+          <div class="preflight-panel" aria-label="ตรวจสอบเส้นตัด">
+            <div class="preflight-head"><strong>Geometry Preflight</strong><span id="nestPreflightSummary" class="preflight-state">ยังไม่ได้ตรวจ</span></div>
+            <p id="nestPreflight" class="preflight-log" role="status" aria-live="polite">ตรวจเส้นปิด เส้นซ้ำ เส้นตัดกัน และหน่วยไฟล์ก่อนจัดเรียง</p>
+            <button id="nestPreflightBtn" class="secondary" type="button">ตรวจเส้น DXF</button>
+          </div>
+          <p class="workflow-kicker">02 / SHEET & MACHINE SETUP</p>
+          <label class="nest-field nest-algorithm"><span>วิธีจัดเรียงชิ้นงาน</span><select id="nestAlgorithm">
+            <option value="bbox">Bounding Box — เร็วและเผื่อพื้นที่</option>
+            <option value="polygon">Polygon-aware — Beta (ตรวจเส้นจริง)</option>
+          </select></label>
           <label class="nest-field nest-material-full"><span>วัสดุ / ขนาดแผ่น</span>
             <select id="nestMaterial">
               <option value="plaswood10-half">พลาสวูด 10 มม. · ครึ่งแผ่น</option>
@@ -148,6 +153,7 @@
           </div>
           <label class="nest-check"><input id="nestRotate" type="checkbox" checked><span>อนุญาตหมุน 0° / 90°</span></label>
           <div class="sheet-title more-title"><b>ต้นทุนตัดและกำไร</b><span class="layer-summary">THB</span></div>
+          <p class="workflow-kicker">03 / COST & QUOTATION</p>
           <div class="nest-fields">
             <label class="nest-field"><span>ค่าตัด / เมตร (฿)</span><input id="nestCutRate" type="number" min="0" value="35" inputmode="decimal"></label>
             <label class="nest-field"><span>ค่า Setup (฿)</span><input id="nestSetup" type="number" min="0" value="150" inputmode="decimal"></label>
@@ -156,11 +162,14 @@
             <label class="nest-field"><span>Gross Margin (%)</span><input id="nestMarginPct" type="number" min="0" max="85" value="35" inputmode="decimal"></label>
             <label class="nest-field"><span>VAT (%)</span><input id="nestVat" type="number" min="0" max="30" value="0" inputmode="decimal"></label>
           </div>
-          <button id="nestRunBtn" class="primary full nest-run" type="button">จัดเรียง + คำนวณราคา</button>
+          <button id="nestRunBtn" class="primary full nest-run" type="button">จัดเรียงชิ้นงานและคำนวณราคา</button>
+          <p id="nestSafetyStatus" class="manufacturing-state" role="status" aria-live="polite">สถานะ: PREVIEW ONLY — ยังไม่ใช่ไฟล์สำหรับสั่ง CNC</p>
           <div id="nestResults" class="nest-results hidden">
             <div class="sheet-title more-title"><b>ผังการจัดเรียง</b><span id="nestPageIndex" class="layer-summary">แผ่น 1 / 1</span></div>
+            <p class="workflow-kicker">04 / VISUAL REVIEW</p>
             <div id="nestPreview" class="nest-preview" role="img" aria-label="ตัวอย่างแผ่นวัสดุและตำแหน่งจัดเรียงชิ้นงาน"></div>
             <div class="action-row nest-pager"><button id="nestPrevPage" class="secondary" type="button">◀ ก่อนหน้า</button><button id="nestNextPage" class="secondary" type="button">ถัดไป ▶</button></div>
+            <button id="nestOffsetPreviewBtn" class="secondary full" type="button" aria-pressed="false">แสดง Tool Offset Preview (ไม่ใช่ CAM)</button>
             <div class="nest-stats">
               <div><small>แผ่นวัสดุ</small><strong id="nestSheetCount">—</strong></div>
               <div><small>จำนวนชิ้น</small><strong id="nestPieces">—</strong></div>
@@ -192,9 +201,9 @@
           </div>
           <p id="nestWarning" class="nest-warning" role="alert" hidden></p>
           <p class="note">ราคาอ้างอิงตลาดที่พบ: อักษรพลาสวูด 10 มม. สูง 50 ซม. 320 ฿/ตัว (TP Media, 9 ก.ย. 2568) ไม่ใช่ค่าเฉลี่ยตลาด; ตัวเลขต้นทุนเป็นค่าเริ่มต้นที่แก้ไขได้</p>
-          <p class="note">Nesting ใช้ Bounding Box และเส้นที่ถอดจาก DXF เพื่อประเมินพื้นที่/ราคาเท่านั้น ยังไม่ใช่ CAM และไม่รองรับ Tool Offset, Lead-in/out, Tab, ความแม่นยำ Spline หรือ Closed Contour QA ครบถ้วน</p>
+          <p class="note">รองรับ Bounding Box และ Polygon-aware Beta พร้อม Preflight/Offset Preview แต่ยังไม่สร้าง Toolpath, Lead-in/out, Tabs หรือ G-code ต้องตรวจยืนยันใน CAM ก่อนตัดจริง</p>
         </div>
-        <div class="tabpane" data-pane="more">
+        <div class="tabpane" data-pane="more" id="panel-more" role="tabpanel" aria-labelledby="tab-more" tabindex="0">
           <div class="sheet-title"><b>ส่งออกไฟล์และเอกสาร</b><span class="layer-summary">EXPORT</span></div>
           <div class="export-grid" role="group" aria-label="เลือกชนิดไฟล์ส่งออก">
             <button id="exportReviewPdfBtn" class="export-btn" type="button"><b>PDF · A4</b><small>ส่งตรวจ / ประกอบการอนุมัติ</small></button>
@@ -221,7 +230,7 @@
     <div id="fileError" class="file-error hidden" role="alert" aria-live="assertive">
       <strong>เปิดไฟล์ไม่สำเร็จ</strong>
       <p id="fileErrorDetail"></p>
-      <div class="file-error-actions"><button id="dismissFileError" class="secondary">ปิดข้อความ</button><span>ITIDEAS CAD v2.2.0</span></div>
+      <div class="file-error-actions"><button id="dismissFileError" class="secondary">ปิดข้อความ</button><span>ITIDEAS CAD v2.3.0</span></div>
     </div>
     <div id="installModal" class="modal hidden" role="dialog" aria-modal="true">
       <div class="modal-card">
@@ -238,6 +247,6 @@
       </div>
     </div>
   </div>
-  <script type="module" src="./app.js"></script>
+  <script type="module" src="./app.bundle.js"></script>
 </body>
 </html>
