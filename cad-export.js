@@ -12,10 +12,14 @@ export function exportSvg(model,visible){
  const size=f?('width="'+fmt(b.width*f)+'mm" height="'+fmt(b.height*f)+'mm"'):('width="'+fmt(b.width)+'" height="'+fmt(b.height)+'"');
  const output=[];
  const selectedPaths=paths(model,visible);
- const lineWidth=f?.18/f:Math.max(b.width,b.height)/1200;
- for(const [i,l] of layers(model,visible).entries()){
-   let group='<g data-layer="'+esc(l.name)+'" fill="none" stroke="'+COLORS[i%COLORS.length]+'" stroke-width="'+fmt(lineWidth)+'" stroke-linejoin="round">';
+ const lineWidth=f?0.18/f:Math.max(b.width,b.height)/1200;
+ for(const l of layers(model,visible)){
+   const index=model.layers.findIndex(x=>x.name===l.name);
+   let group='<g data-layer="'+esc(l.name)+'" fill="none" stroke="'+COLORS[index%COLORS.length]+'" stroke-width="'+fmt(lineWidth)+'" stroke-linejoin="round">';
    for(const p of selectedPaths.filter(p=>p.layer===l.name))group+='<path d="'+esc(p.d)+'"/>';
+   for(const t of (model.texts||[]).filter(t=>t.layer===l.name)){
+     group+='<text x="'+fmt(t.x)+'" y="'+fmt(-t.y)+'" font-size="'+fmt(Math.max(t.size,.5))+'" font-family="Arial, sans-serif" fill="#d7e0e9" stroke="none">'+esc(t.value)+'</text>';
+   }
    output.push(group+'</g>');
  }
  return '<?xml version="1.0" encoding="UTF-8"?>\n<svg xmlns="http://www.w3.org/2000/svg" '+size+' viewBox="'+fmt(b.minX)+' '+fmt(-b.maxY)+' '+fmt(b.width)+' '+fmt(b.height)+'" preserveAspectRatio="xMidYMid meet"><title>ITIDEAS CAD - DXF vector preview</title>'+output.join('')+'</svg>';
@@ -71,7 +75,15 @@ function vectors(model,visible,{scale,originX,originY,strokePt}){
    const x=originX+(step.x-b.minX)*scale,y=originY+(-step.y-b.minY)*scale;
    content+=fmt(x)+' '+fmt(y)+' '+(step.cmd==='M'?'m':'l')+'\n';
   }content+='S\n';
- }return content;
+ }
+ const enabled=new Set(layers(model,visible).map(l=>l.name));
+ for(const t of model.texts||[]){
+  if(!enabled.has(t.layer))continue;
+  const px=originX+(t.x-b.minX)*scale,py=originY+(t.y-b.minY)*scale;
+  const fontSize=Math.max(3,Math.min(72,Math.max(t.size,.5)*scale));
+  content+='0 0 0 rg\nBT /F1 '+fmt(fontSize)+' Tf '+fmt(px)+' '+fmt(py)+' Td ('+textEscape(t.value)+') Tj ET\n';
+ }
+ return content;
 }
 function text(line,x,y,size=9){return 'BT /F1 '+fmt(size)+' Tf '+fmt(x)+' '+fmt(y)+' Td ('+textEscape(line)+') Tj ET\n';}
 export function exportPrintPdf(model,visible){
@@ -82,9 +94,9 @@ export function exportPrintPdf(model,visible){
  return makePdf({widthPt:(widthMm+10)*PT,heightPt:(heightMm+10)*PT,commands:content,title:'ITIDEAS CAD DXF 1:1 VECTOR'});
 }
 export function exportReviewPdf(model,visible,{fileName='drawing.dxf'}={}){
- const width=297*PT,height=210*PT,b=model.bounds,usableW=267*PT,usableH=147*PT;
+ const width=297*PT,height=210*PT,b=model.bounds,usableW=267*PT,usableH=137*PT;
  const scale=Math.min(usableW/b.width,usableH/b.height);
- const ox=(width-b.width*scale)/2,oy=25*PT+(usableH-b.height*scale)/2;
+ const ox=(width-b.width*scale)/2,oy=22*PT+(usableH-b.height*scale)/2;
  const dimension=model.unit?.factor?(fmt(b.width*model.unit.factor)+' x '+fmt(b.height*model.unit.factor)+' mm'):(fmt(b.width)+' x '+fmt(b.height)+' drawing units');
  let content='0 0 0 rg\n'+text('ITIDEAS CAD  |  INSPECTION REVIEW',15*PT,193*PT,14);
  content+=text('A4  |  NOT FOR PRODUCTION  |  NOT A TOOLPATH',15*PT,184*PT,9);
