@@ -28,3 +28,11 @@ test('Static build and service worker cache newly introduced Nesting modules',()
   assert.match(build,/nesting-engine\.js/);assert.match(build,/nesting-ui\.js/);
   assert.match(build,/cad-export\.js/);
 });
+
+test('public market benchmark is distinctly labeled as one listing, not a market mean',()=>{
+ const html=readFileSync('index.html','utf8');
+ const src=readFileSync('nesting-ui.js','utf8');
+ assert.match(html,/id="nestMarketText"/);
+ assert.match(html,/ไม่ใช่ค่าเฉลี่ยตลาด/);
+ assert.match(src,/320\*nest\.placements\.length/);
+});

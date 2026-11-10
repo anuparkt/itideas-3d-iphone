@@ -114,6 +114,15 @@ export function setupNestingUI({cad2d,showToast=()=>{},showFileError=()=>{}}){
    setText('nestSaleSuggested',money(Math.ceil(quote.salePrice/50)*50)+' ฿');
    setText('nestCutOnlySale',money(quote.cutOnlySalePrice)+' ฿');
    setText('nestSaleVat',money(quote.saleInclVat)+' ฿');
+   if(sourceMode==='demo'){
+    const market=320*nest.placements.length;
+    const suggest=Math.ceil(quote.salePrice/50)*50;
+    setText('nestMarketText','ราคาอักษร A B C ที่พบจากผู้ขาย 1 ราย: '+money(market)+' ฿ ('+nest.placements.length+' ตัว × 320 ฿)');
+    setText('nestMarketDiff','ราคาที่ระบบเสนอ '+(suggest>=market?'สูงกว่า':'ต่ำกว่า')+'ตัวอย่างตลาด '+money(Math.abs(suggest-market))+' ฿ · ปรับต้นทุนหรือ Margin เพื่อแข่งขันได้');
+   }else{
+    setText('nestMarketText','ไม่มีราคาเฉลี่ยตลาดที่เทียบได้ตรงกับ DXF ไฟล์นี้');
+    setText('nestMarketDiff','ประเมินราคาจากวัสดุ ความยาวตัด และต้นทุนที่กรอก ไม่ใช้ราคาตัวอักษรแทนราคางานอื่น');
+   }
    const notes=[...(source.warnings||[])];
    if(nest.isEstimate)notes.unshift('ตัวอย่าง ABC ใช้กรอบสี่เหลี่ยมสมมติ ไม่ใช่ทรงตัวอักษรจริง');
    notes.push('จัดเรียงแบบ Bounding Box ไม่ใช่ True-Shape Nesting; ต้องตรวจ CAM ก่อนตัดจริง');
