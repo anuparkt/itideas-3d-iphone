@@ -1,4 +1,4 @@
-const CACHE='itideas-cad-cloudflare-v2.3.0';
+const CACHE='itideas-cad-cloudflare-v2.3.1';
 const CORE=['./','./index.html','./style.css','./design.css','./app.js','./app.bundle.js','./cad2d.js','./cad-geometry.js','./cad-export.js','./nesting-engine.js','./nesting-ui.js','./cnc-quality.js','./dxf-parser.bundle.js','./manifest.webmanifest','./icons/icon-192.png','./icons/icon-512.png','./icons/apple-touch-icon.png'];
 self.addEventListener('install',e=>{e.waitUntil(caches.open(CACHE).then(c=>c.addAll(CORE)).then(()=>self.skipWaiting()))});
 self.addEventListener('activate',e=>{e.waitUntil(caches.keys().then(keys=>Promise.all(keys.filter(k=>k!==CACHE).map(k=>caches.delete(k)))).then(()=>self.clients.claim()))});
