@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {drawingFromDxf} from '../cad-geometry.js';
-import {preflightDxf,offsetToolpathPreview,packPolygonAware,polygonIntersectionArea} from '../cnc-quality.js';
+import {preflightDxf,offsetToolpathPreview,packPolygonAware,polygonIntersectionArea} from '../src/cnc-quality.src.js';
 const makeModel=entities=>drawingFromDxf({header:{$INSUNITS:4},entities});
 
 test('open cutting geometry blocks CAM readiness',()=>{
