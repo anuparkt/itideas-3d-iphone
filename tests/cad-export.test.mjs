@@ -51,3 +51,14 @@ test('PNG preview size is capped for mobile memory safety',()=>{
  assert.ok(pixels.width<=4096 && pixels.height<=4096);
  assert.ok(pixels.width>=1000);
 });
+
+test('DXF TEXT labels on visible layers remain in SVG and PDF review',()=>{
+ const labeled=drawingFromDxf({header:{$INSUNITS:4},entities:[
+  {type:'LINE',layer:'CUT',vertices:[{x:0,y:0},{x:100,y:50}]},
+  {type:'TEXT',layer:'MARKING',startPoint:{x:10,y:20},height:3,text:'P01'}
+ ]});
+ const svg=exportSvg(labeled,new Set(['CUT','MARKING']));
+ assert.match(svg,/>P01<\/text>/);
+ const pdf=new TextDecoder('latin1').decode(exportReviewPdf(labeled,new Set(['CUT','MARKING']),{fileName:'parts.dxf'}));
+ assert.match(pdf,/P01/);
+});
