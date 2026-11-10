@@ -9,11 +9,11 @@
   },
   "dependencies": {
     "dxf-parser": "1.1.2",
-    "clipper-lib": "6.4.2"
+    "clipper-lib": "6.4.2",
+    "three": "0.180.0"
   },
   "devDependencies": {
-    "esbuild": "^0.25.12",
-    "three": "0.180.0"
+    "esbuild": "^0.25.12"
   },
   "engines": {
     "node": ">=20"

@@ -12,4 +12,9 @@ for(const icon of ['apple-touch-icon.png','icon-192.png','icon-512.png']){
 }
 await bundle({entryPoints:[join(root,'scripts/dxf-entry.js')],bundle:true,minify:true,platform:'browser',format:'iife',target:['safari15','es2020'],outfile:join(dist,'dxf-parser.bundle.js')});
 await bundle({entryPoints:[join(root,'src/cnc-quality.src.js')],bundle:true,minify:true,platform:'browser',format:'esm',target:['safari15','es2020'],outfile:join(dist,'cnc-quality.js')});
+await bundle({
+  entryPoints:[join(root,'app.js')],bundle:true,minify:true,platform:'browser',
+  format:'esm',target:['safari15','es2020'],outfile:join(dist,'app.bundle.js'),
+  external:['./cnc-quality.js','https://*'],logLevel:'info'
+});
 console.log('Cloudflare Pages output ready: dist/ (local DXF parser included)');
