@@ -1,5 +1,5 @@
-const CACHE='itideas-cad-cloudflare-v2.1.0';
-const CORE=['./','./index.html','./style.css','./app.js','./cad2d.js','./cad-geometry.js','./dxf-parser.bundle.js','./manifest.webmanifest','./icons/icon-192.png','./icons/icon-512.png','./icons/apple-touch-icon.png'];
+const CACHE='itideas-cad-cloudflare-v2.1.1';
+const CORE=['./','./index.html','./style.css','./app.js','./cad2d.js','./cad-geometry.js','./cad-export.js','./dxf-parser.bundle.js','./manifest.webmanifest','./icons/icon-192.png','./icons/icon-512.png','./icons/apple-touch-icon.png'];
 self.addEventListener('install',e=>{e.waitUntil(caches.open(CACHE).then(c=>c.addAll(CORE)).then(()=>self.skipWaiting()))});
 self.addEventListener('activate',e=>{e.waitUntil(caches.keys().then(keys=>Promise.all(keys.filter(k=>k!==CACHE).map(k=>caches.delete(k)))).then(()=>self.clients.claim()))});
 self.addEventListener('fetch',e=>{

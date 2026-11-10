@@ -3,6 +3,7 @@ import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import { STLLoader } from 'three/addons/loaders/STLLoader.js';
 import { ThreeMFLoader } from 'three/addons/loaders/3MFLoader.js';
 import {cad2d,loadCad2D} from './cad2d.js';
+import {exportSvg,exportPrintPdf,exportReviewPdf,exportJpegReviewPdf,choosePreviewPixels} from './cad-export.js';
 
 const $=id=>document.getElementById(id);
 const viewer=$('viewer'), emptyState=$('emptyState'), loading=$('loading');
@@ -20,7 +21,7 @@ const fill=new THREE.DirectionalLight(0x8ec5ff,1.2); fill.position.set(-120,80,-
 const grid=new THREE.GridHelper(200,20,0x4b647f,0x24364d); scene.add(grid);
 const axes=new THREE.AxesHelper(60); scene.add(axes);
 
-let modelRoot=null, edgesGroup=null, bounds=null, measureMode=false, measurePts=[], measureObjects=[];
+let modelRoot=null, edgesGroup=null, bounds=null, measureMode=false, measurePts=[], measureObjects=[], last3DFile=null;
 const raycaster=new THREE.Raycaster(), pointer=new THREE.Vector2();
 const bgColors=[0x0b1220,0x171717,0x243041,0xf3f4f6]; let bgIndex=0;
 
@@ -49,7 +50,7 @@ function updateInfo(file,format,root){bounds=new THREE.Box3().setFromObject(root
 
 async function readSTEP(file,buffer){setLoading(true,'กำลังเปิด STEP…','กำลังโหลด CAD engine ครั้งแรกอาจใช้เวลาสักครู่');const base='https://cdn.jsdelivr.net/npm/occt-import-js@0.0.23/dist/';if(!window.occtimportjs){await new Promise((res,rej)=>{const s=document.createElement('script');s.src=base+'occt-import-js.js';s.onload=res;s.onerror=()=>rej(new Error('โหลด STEP engine ไม่สำเร็จ'));document.head.appendChild(s)})}const occt=await window.occtimportjs({locateFile:path=>base+path});const result=occt.ReadStepFile(new Uint8Array(buffer),null);if(!result||!result.meshes||!result.meshes.length)throw new Error('ไม่พบ mesh ในเฟล์ STEP');const group=new THREE.Group();for(const m of result.meshes){const g=new THREE.BufferGeometry();const p=m.attributes?.position?.array;if(!p)continue;g.setAttribute('position',new THREE.Float32BufferAttribute(p,3));const n=m.attributes?.normal?.array;if(n)g.setAttribute('normal',new THREE.Float32BufferAttribute(n,3));else g.computeVertexNormals();if(m.index?.array)g.setIndex(Array.from(m.index.array));g.computeBoundingSphere();const mat=standardMaterial();group.add(new THREE.Mesh(g,mat))}return group}
 
-async function loadFile(file){const ext=file.name.split('.').pop().toLowerCase();if(!['stl','3mf','step','stp','dxf','ai'].includes(ext)){showToast('รองรับ STL, 3MF, STEP, DXF และ AI');return}$('fileError').classList.add('hidden');setLoading(true);try{if(ext==='dxf'||ext==='ai'){disposeModel();await loadCad2D(file);showToast('เปิดไฟล์ 2D สำเร็จ');return;}cad2d.hide();const infoTab=document.querySelector('[data-tab="info"]');if(document.querySelector('.tabs [data-tab="layers"].active'))infoTab?.click();disposeModel();const buffer=await file.arrayBuffer();let root;if(ext==='stl'){const g=new STLLoader().parse(buffer);g.computeVertexNormals();root=new THREE.Group();root.add(new THREE.Mesh(g,standardMaterial()))}else if(ext==='3mf'){root=new ThreeMFLoader().parse(buffer);normalizeMaterials(root)}else{root=await readSTEP(file,buffer)}modelRoot=root;scene.add(modelRoot);centerOnOrigin(modelRoot);modelRoot.updateMatrixWorld(true);createEdges();setRenderMode();updateInfo(file,ext,modelRoot);fitView('iso');showToast('เปิดไฟล์เรียบร้อย')}catch(e){console.error(e);disposeModel();cad2d.hide();emptyState.classList.remove('hidden');showFileError(file,e);showToast('เปิดไฟล์ไม่สำเร็จ — ดูรายละเอียดบนหน้าจอ',4200)}finally{setLoading(false)}}
+async function loadFile(file){const ext=file.name.split('.').pop().toLowerCase();if(!['stl','3mf','step','stp','dxf','ai'].includes(ext)){showToast('รองรับ STL, 3MF, STEP, DXF และ AI');return}$('fileError').classList.add('hidden');setLoading(true);try{if(ext==='dxf'||ext==='ai'){disposeModel();await loadCad2D(file);last3DFile=null;syncExportButtons();showToast('เปิดไฟล์ 2D สำเร็จ');return;}cad2d.hide();const infoTab=document.querySelector('[data-tab="info"]');if(document.querySelector('.tabs [data-tab="layers"].active'))infoTab?.click();disposeModel();const buffer=await file.arrayBuffer();let root;if(ext==='stl'){const g=new STLLoader().parse(buffer);g.computeVertexNormals();root=new THREE.Group();root.add(new THREE.Mesh(g,standardMaterial()))}else if(ext==='3mf'){root=new ThreeMFLoader().parse(buffer);normalizeMaterials(root)}else{root=await readSTEP(file,buffer)}modelRoot=root;scene.add(modelRoot);centerOnOrigin(modelRoot);modelRoot.updateMatrixWorld(true);createEdges();setRenderMode();updateInfo(file,ext,modelRoot);last3DFile=file;syncExportButtons();fitView('iso');showToast('เปิดไฟล์เรียบร้อย')}catch(e){console.error(e);disposeModel();cad2d.hide();last3DFile=null;syncExportButtons();emptyState.classList.remove('hidden');showFileError(file,e);showToast('เปิดไฟล์ไม่สำเร็จ — ดูรายละเอียดบนหน้าจอ',4200)}finally{setLoading(false)}}
 
 function clearMeasure(){measurePts=[];measureObjects.forEach(o=>{scene.remove(o);o.geometry&&o.geometry.dispose();o.material&&o.material.dispose()});measureObjects=[];$('measureReadout').textContent='ระยะ: —'}
 function addMarker(p){const g=new THREE.SphereGeometry(Math.max((bounds?.getSize(new THREE.Vector3()).length()||100)*.006,.5),16,10);const m=new THREE.MeshBasicMaterial({color:0x67e8f9});const s=new THREE.Mesh(g,m);s.position.copy(p);scene.add(s);measureObjects.push(s)}
@@ -71,6 +72,107 @@ $('cameraMode').onchange=e=>{const old=camera,newCam=e.target.value==='orthograp
 $('measureBtn').onclick=()=>{if(cad2d.active){cad2d.beginMeasure();return;}if(!modelRoot){showToast('เปิดไฟล์ก่อน');return}clearMeasure();measureMode=true;$('measureBtn').textContent='แตะจุดที่ 1 และ 2';showToast('แตะผิวโมเดล 2 จุด')};$('clearMeasureBtn').onclick=()=>{if(cad2d.active){cad2d.clearMeasure();return;}clearMeasure();measureMode=false;$('measureBtn').textContent='เริ่มวัด'};
 $('bgBtn').onclick=()=>{bgIndex=(bgIndex+1)%bgColors.length;scene.background=new THREE.Color(bgColors[bgIndex])};
 $('screenshotBtn').onclick=()=>{if(cad2d.active){cad2d.capture();return;}renderer.render(scene,camera);const a=document.createElement('a');a.download='ITIDEAS-3D-'+Date.now()+'.png';a.href=renderer.domElement.toDataURL('image/png');a.click();showToast('สร้างภาพ PNG แล้ว')};
+
+
+function exportFilename(file,suffix,extension){
+ const base=(file?.name||'ITIDEAS-CAD').replace(/\.[^.]+$/,'').replace(/[<>:"/\\|?*\x00-\x1f]+/g,'_').slice(0,75);
+ return base+'_'+suffix+'.'+extension;
+}
+function dataURLtoBytes(dataUrl){
+ const str=atob(dataUrl.slice(dataUrl.indexOf(',')+1));
+ const out=new Uint8Array(str.length);
+ for(let i=0;i<str.length;i++)out[i]=str.charCodeAt(i);
+ return out;
+}
+function downloadBytes(data,mime,name){
+ const blob=data instanceof Blob?data:new Blob([data],{type:mime});
+ const url=URL.createObjectURL(blob),link=document.createElement('a');
+ link.href=url;link.download=name;link.style.display='none';
+ document.body.appendChild(link);link.click();link.remove();
+ setTimeout(()=>URL.revokeObjectURL(url),45000);
+}
+function syncExportButtons(){
+ const isDxf=cad2d.active&&!!cad2d.drawing;
+ const isAi=cad2d.active&&!cad2d.drawing&&!!cad2d.aiCanvas;
+ const canExport=isDxf||isAi||!!modelRoot;
+ $('exportReviewPdfBtn').disabled=!canExport;
+ $('exportPrintPdfBtn').disabled=!(isDxf||isAi);
+ $('exportSvgBtn').disabled=!isDxf;
+ $('exportPngBtn').disabled=!canExport;
+ $('exportHint').textContent=isDxf
+  ?'DXF: PDF 1:1 คงขนาดเส้นตามหน่วยในไฟล์, SVG เวกเตอร์; PNG เป็นภาพพรีวิวจำกัดความละเอียด · ตรวจเส้นโค้งและข้อความใน CAD ก่อนผลิต'
+  :isAi?'AI: PDF 1:1 คัดลอกหน้าต้นฉบับแบบ PDF-compatible; PDF A4 เป็นภาพส่งตรวจ ส่วน PNG เป็นภาพพรีวิว'
+  :modelRoot?'3D: ส่งออก PDF A4 พร้อมภาพตรวจโมเดล และ PNG มุมมองปัจจุบัน · ไม่ใช่ไฟล์พิมพ์ 3D'
+  :'เปิดไฟล์ CAD ก่อนส่งออก · PDF 1:1 และ SVG ใช้ได้เมื่อมีข้อมูลแบบ 2D';
+}
+async function pngFromSvg(svg,model){
+ const dims=choosePreviewPixels(model.bounds.width,model.bounds.height);
+ const url=URL.createObjectURL(new Blob([svg],{type:'image/svg+xml;charset=utf-8'}));
+ try{
+  const img=new Image();img.src=url;
+  await new Promise((resolve,reject)=>{img.onload=resolve;img.onerror=()=>reject(Error('เรนเดอร์ SVG เป็น PNG ไม่สำเร็จ'));});
+  const canvas=document.createElement('canvas');canvas.width=dims.width;canvas.height=dims.height;
+  const ctx=canvas.getContext('2d');if(!ctx)throw Error('iPhone ไม่สามารถสร้างภาพขนาดนี้ได้');
+  ctx.clearRect(0,0,dims.width,dims.height);ctx.drawImage(img,0,0,dims.width,dims.height);
+  const blob=await new Promise((resolve,reject)=>canvas.toBlob(b=>b?resolve(b):reject(Error('เข้ารหัส PNG ไม่สำเร็จ')),'image/png'));
+  return {blob,dims};
+ }finally{URL.revokeObjectURL(url);}
+}
+async function exportFile(kind){
+ const mode2d=cad2d.active, model=mode2d?cad2d.drawing:null;
+ const file=mode2d?cad2d.originalFile:last3DFile;
+ if(!file){showToast('เปิดไฟล์ CAD ก่อนส่งออก');return;}
+ const visible=mode2d?cad2d.visibleLayers:new Set();
+ $('fileError').classList.add('hidden');
+ setLoading(true,'กำลังส่งออกไฟล์…','ตรวจขนาดและสร้างเอกสาร');
+ try{
+  if(kind==='svg'){
+   if(!model)throw Error('SVG เวกเตอร์รองรับไฟล์ DXF เท่านั้น');
+   downloadBytes(exportSvg(model,visible),'image/svg+xml',exportFilename(file,'VECTOR','svg'));
+  }else if(kind==='print'){
+   if(model){
+    downloadBytes(exportPrintPdf(model,visible),'application/pdf',exportFilename(file,'PRINT_1to1','pdf'));
+   }else if(mode2d && cad2d.aiCanvas){
+    downloadBytes(new Blob([await file.arrayBuffer()],{type:'application/pdf'}),'application/pdf',exportFilename(file,'ORIGINAL_ARTBOARD','pdf'));
+   }else throw Error('PDF ขนาดจริงรองรับเฉพาะ DXF หรือ AI แบบ PDF-compatible');
+  }else if(kind==='review'){
+   if(model){
+    downloadBytes(exportReviewPdf(model,visible,{fileName:file.name}),'application/pdf',exportFilename(file,'REVIEW_A4','pdf'));
+   }else{
+    const canvas=mode2d?cad2d.aiCanvas:renderer.domElement;
+    if(!canvas)throw Error('ไม่มีภาพสำหรับส่งตรวจ');
+    if(!mode2d)renderer.render(scene,camera);
+    const jpeg=dataURLtoBytes(canvas.toDataURL('image/jpeg',.88));
+    const details=mode2d?'AI artboard preview':('3D '+$('dimX').textContent+' / '+$('dimY').textContent+' / '+$('dimZ').textContent);
+    downloadBytes(exportJpegReviewPdf(jpeg,canvas.width,canvas.height,{fileName:file.name,details}),'application/pdf',exportFilename(file,'REVIEW_A4','pdf'));
+   }
+  }else if(kind==='png'){
+   if(model){
+    const result=await pngFromSvg(exportSvg(model,visible),model);
+    downloadBytes(result.blob,'image/png',exportFilename(file,'PREVIEW','png'));
+    if(model.unit?.factor){
+     const dpi=25.4*result.dims.width/(model.bounds.width*model.unit.factor);
+     $('exportHint').textContent='PNG '+result.dims.width+' × '+result.dims.height+' px (ประมาณ '+dpi.toFixed(0)+' DPI ที่ขนาดจริง) · สำหรับพรีวิว หากต้องการเส้นคมที่ขนาดจริง ใช้ PDF 1:1';
+    }
+   }else{
+    const canvas=mode2d?cad2d.aiCanvas:renderer.domElement;
+    if(!canvas)throw Error('ไม่มีภาพสำหรับส่งออก');
+    if(!mode2d)renderer.render(scene,camera);
+    const blob=await new Promise((resolve,reject)=>canvas.toBlob(b=>b?resolve(b):reject(Error('สร้างภาพ PNG ไม่สำเร็จ')),'image/png'));
+    downloadBytes(blob,'image/png',exportFilename(file,'PREVIEW','png'));
+   }
+  }else throw Error('ไม่รองรับรูปแบบส่งออก');
+  if(kind!=='png'||!model)$('exportHint').textContent='สร้างไฟล์ '+kind.toUpperCase()+' แล้ว · หาก Safari เปิดไฟล์ขึ้นมา ให้ใช้ Share → Save to Files';
+  showToast('สร้างไฟล์ส่งออกแล้ว');
+ }catch(e){
+  console.error(e);showFileError(file,e);
+ }finally{setLoading(false);}
+}
+$('exportReviewPdfBtn').onclick=()=>exportFile('review');
+$('exportPrintPdfBtn').onclick=()=>exportFile('print');
+$('exportSvgBtn').onclick=()=>exportFile('svg');
+$('exportPngBtn').onclick=()=>exportFile('png');
+syncExportButtons();
 
 document.querySelectorAll('.tabs button').forEach(btn=>btn.onclick=()=>{document.querySelectorAll('.tabs button').forEach(b=>b.classList.toggle('active',b===btn));document.querySelectorAll('.tabpane').forEach(p=>p.classList.toggle('active',p.dataset.pane===btn.dataset.tab))});
 const modal=$('installModal');const showInstall=()=>modal.classList.remove('hidden');$('installBtn').onclick=showInstall;$('helpInstallBtn').onclick=showInstall;$('closeInstall').onclick=()=>modal.classList.add('hidden');$('closeInstall2').onclick=()=>modal.classList.add('hidden');modal.addEventListener('click',e=>{if(e.target===modal)modal.classList.add('hidden')});

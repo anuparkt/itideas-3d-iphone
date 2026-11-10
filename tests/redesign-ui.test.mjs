@@ -34,3 +34,14 @@ test("DXF layers default to non-obscuring panel and do not open automatically",(
   assert.match(css,/\.cad-layer-row/);
   assert.match(html,/id="cadLayerSummary"/);
 });
+
+test("export buttons are connected to a runtime export handler",()=>{
+ assert.match(html,/id="exportReviewPdfBtn"/);
+ assert.match(html,/id="exportPrintPdfBtn"/);
+ assert.match(html,/id="exportSvgBtn"/);
+ assert.match(html,/id="exportPngBtn"/);
+ assert.match(app,/exportFile\('review'\)/);
+ assert.match(app,/exportFile\('print'\)/);
+ assert.match(app,/exportFile\('svg'\)/);
+ assert.match(app,/exportFile\('png'\)/);
+});
