@@ -1,10 +1,10 @@
 {
   "name": "itideas-cad-viewer",
-  "version": "2.0.1",
+  "version": "2.1.0",
   "private": true,
   "type": "module",
   "scripts": {
-    "test": "node --test tests/cad-geometry.test.mjs tests/file-picker.test.mjs",
+    "test": "node --test tests/cad-geometry.test.mjs tests/file-picker.test.mjs tests/redesign-ui.test.mjs",
     "build": "node scripts/build.mjs"
   },
   "dependencies": {
