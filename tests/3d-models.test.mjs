@@ -4,6 +4,11 @@ import {OBJLoader} from 'three/addons/loaders/OBJLoader.js';
 import {PLYLoader} from 'three/addons/loaders/PLYLoader.js';
 import {GLTFLoader} from 'three/addons/loaders/GLTFLoader.js';
 
+// ProgressEvent is a browser primitive, not part of Node's test runtime.
+if(typeof globalThis.ProgressEvent==='undefined')globalThis.ProgressEvent=class ProgressEvent extends Event {
+ constructor(type,options={}){super(type);this.loaded=options.loaded||0;this.total=options.total||0;this.lengthComputable=!!options.lengthComputable;}
+};
+
 test('OBJ loader parses real triangle mesh into 3D scene',()=>{
  const obj=['o TEST_TRIANGLE','v 0 0 0','v 30 0 0','v 0 40 0','f 1 2 3'].join('\n');
  const group=new OBJLoader().parse(obj);
