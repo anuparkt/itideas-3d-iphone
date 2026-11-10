@@ -18,3 +18,10 @@ test('local bundle includes 3MF/GLTF logic rather than three CDN module imports'
  assert.doesNotMatch(src,/import[^;]*from\s*["']https:\/\/cdn\.jsdelivr\.net\/npm\/three/);
  assert.ok(src.length>100000);
 });
+
+test('Cloudflare security headers are published',()=>{
+ const h=readFileSync('dist/_headers','utf8');
+ assert.match(h,/X-Content-Type-Options: nosniff/);
+ assert.match(h,/Permissions-Policy:/);
+ assert.match(h,/Cache-Control: no-cache/);
+});
