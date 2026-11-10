@@ -123,8 +123,10 @@ function downloadBytes(data,mime,name){
  setTimeout(()=>URL.revokeObjectURL(url),45000);
 }
 function syncExportButtons(){
- const isDxf=cad2d.active&&!!cad2d.drawing;
- const isAi=cad2d.active&&!cad2d.drawing&&!!cad2d.aiCanvas;
+ // Use the same state source as exportFile(), not an out-of-scope local variable.
+ const mode2d=cad2d.active;
+ const isDxf=mode2d&&!!cad2d.drawing;
+ const isAi=mode2d&&!cad2d.drawing&&!!cad2d.aiCanvas;
  const canExport=isDxf||isAi||!!modelRoot;
  $('exportReviewPdfBtn').disabled=!canExport;
  $('exportPrintPdfBtn').disabled=!(isDxf||isAi);
