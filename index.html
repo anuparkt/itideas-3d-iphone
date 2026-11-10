@@ -13,7 +13,7 @@
   <link rel="apple-touch-icon" href="./icons/apple-touch-icon.png" />
   <link rel="icon" href="./icons/icon-192.png" />
   <link rel="stylesheet" href="./style.css" />
-  <title>ITIDEAS CAD Viewer v2.0.3</title>
+  <title>ITIDEAS CAD Viewer v2.0.4</title>
   <script type="importmap">
   {
     "imports": {
@@ -36,7 +36,9 @@
       <div class="top-actions">
         <button id="installBtn" class="icon-btn" aria-label="ติดตั้งแอป" title="ติดตั้งแอป">＋</button>
         <button id="openBtn" class="primary">เปิดไฟล์</button>
-        <input id="fileInput" type="file" accept=".stl,.3mf,.step,.stp,.dxf,.ai" hidden />
+        <!-- iOS Files may disable .dxf for an unrecognized UTI when accept is set.
+             Allow all files in the picker; loadFile() validates extensions itself. -->
+        <input id="fileInput" type="file" hidden aria-label="เลือกไฟล์ CAD จาก Files" />
       </div>
     </header>
 
@@ -46,7 +48,7 @@
         <div id="emptyState" class="empty-state">
           <div class="cube">⬡</div>
           <h1>แตะ “เปิดไฟล์”</h1>
-          <p>เลือกไฟล์จาก Files / iCloud Drive</p>
+          <p>เลือกไฟล์จาก Files / iCloud Drive ได้ทุกประเภท แล้วแอปจะตรวจสอบชนิดไฟล์ให้</p>
           <div class="chips"><span>STL</span><span>3MF</span><span>STEP</span><span>STP</span><span>DXF</span><span>AI</span></div>
         </div>
         <div id="loading" class="loading hidden">
@@ -127,7 +129,7 @@
     <div id="fileError" class="file-error hidden" role="alert" aria-live="assertive">
       <strong>เปิดไฟล์ไม่สำเร็จ</strong>
       <p id="fileErrorDetail"></p>
-      <div class="file-error-actions"><button id="dismissFileError" class="secondary">ปิดข้อความ</button><span>ITIDEAS CAD v2.0.3</span></div>
+      <div class="file-error-actions"><button id="dismissFileError" class="secondary">ปิดข้อความ</button><span>ITIDEAS CAD v2.0.4</span></div>
     </div>
     <div id="installModal" class="modal hidden" role="dialog" aria-modal="true">
       <div class="modal-card">
