@@ -1,5 +1,6 @@
 import {extractCutParts,packParts,estimateCncQuote,sampleABC,exportNestingSvg} from './nesting-engine.js';
 import {exportJpegReviewPdf} from './cad-export.js';
+import {loadNestingPreferences,saveNestingPreferences} from './nesting-preferences.js';
 import {preflightDxf,packPolygonAware,offsetToolpathPreview} from './cnc-quality.js';
 
 const $=id=>document.getElementById(id);
@@ -49,6 +50,24 @@ async function svgToJpeg(svg){
 export function setupNestingUI({cad2d,showToast=()=>{},showFileError=()=>{}}){
  let sourceMode='dxf',lastResult=null,fileName='CAD-DXF',layoutPage=0,offsetMode=false,lastQA=null;
  const panel=$('nestResults'),preview=$('nestPreview');
+ const preferenceIds=['nestMaterial','nestAlgorithm','nestSheetW','nestSheetH','nestSheetPrice','nestThickness',
+  'nestGap','nestKerf','nestMargin','nestQuantity','nestRotate','nestCutRate','nestSetup','nestTool',
+  'nestFinishing','nestMarginPct','nestVat'];
+ function persistPreferences(){
+  try{
+   const values=Object.fromEntries(preferenceIds.map(id=>[id,id==='nestRotate'?$(id).checked:$(id).value]));
+   saveNestingPreferences(window.localStorage,values);
+  }catch{/* Private browsing storage can be unavailable; continue normally. */}
+ }
+ function restorePreferences(){
+  try{
+   const saved=loadNestingPreferences(window.localStorage);
+   for(const [id,value] of Object.entries(saved)){
+    const el=$(id);if(!el)continue;
+    if(id==='nestRotate')el.checked=value;else el.value=String(value);
+   }
+  }catch{/* Storage is optional. */}
+ }
  const setSummary=s=>{$('nestSourceStatus').textContent=s;};
  const err=(e)=>{
   $('nestWarning').textContent=e.message;
@@ -216,7 +235,7 @@ export function setupNestingUI({cad2d,showToast=()=>{},showFileError=()=>{}}){
    showToast('ไฟล์ '+format.toUpperCase()+' พร้อมบันทึกใน Files');
   }catch(e){showFileError({name:lastResult.fileName},e);err(e);}
  }
- $('nestDemoBtn').onclick=()=>{sourceMode='demo';fileName='ABC_500mm_SAMPLE';$('nestAlgorithm').value='bbox';renderQA(null);sync();run();};
+ $('nestDemoBtn').onclick=()=>{sourceMode='demo';fileName='ABC_500mm_SAMPLE';$('nestAlgorithm').value='bbox';persistPreferences();renderQA(null);sync();run();};
  $('nestUseDxfBtn').onclick=()=>{sourceMode='dxf';reset();renderQA(null);sync();};
  $('nestPreflightBtn').onclick=checkQA;
  $('nestAlgorithm').addEventListener('change',()=>{
@@ -248,12 +267,12 @@ export function setupNestingUI({cad2d,showToast=()=>{},showFileError=()=>{}}){
    $('nestSheetW').value=1220;$('nestSheetH').value=2440;
    $('nestSheetPrice').value=776;$('nestThickness').value=10;
   }
-  reset();sync();
+  reset();sync();persistPreferences();
  };
  const inputs=['nestAlgorithm','nestSheetW','nestSheetH','nestSheetPrice','nestThickness','nestGap','nestKerf','nestMargin',
    'nestQuantity','nestRotate','nestCutRate','nestSetup','nestTool','nestFinishing','nestMarginPct','nestVat'];
- for(const id of inputs)$(id).addEventListener('change',()=>{if(lastResult){reset();setSummary('ปรับข้อมูลแล้ว · กด “คำนวณ Nesting” อีกครั้ง');}});
- sync();reset();renderQA(null);
+ for(const id of inputs)$(id).addEventListener('change',()=>{persistPreferences();if(lastResult){reset();setSummary('ปรับข้อมูลแล้ว · กด “คำนวณ Nesting” อีกครั้ง');}});
+ restorePreferences();sync();reset();renderQA(null);
  return {onFileLoaded(type){
   if(type==='dxf'){sourceMode='dxf';fileName=cad2d.originalFile?.name||'CAD-DXF';reset();renderQA(null);sync();}
   else if(type!=='dxf'){reset();sourceMode='dxf';renderQA(null);sync();}

@@ -4,7 +4,7 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "test": "node --test tests/cad-geometry.test.mjs tests/file-picker.test.mjs tests/redesign-ui.test.mjs tests/cad-export.test.mjs tests/nesting-engine.test.mjs tests/nesting-ui.test.mjs tests/3d-models.test.mjs tests/cnc-quality.test.mjs tests/design-system.test.mjs",
+    "test": "node --test tests/cad-geometry.test.mjs tests/file-picker.test.mjs tests/redesign-ui.test.mjs tests/cad-export.test.mjs tests/nesting-engine.test.mjs tests/nesting-ui.test.mjs tests/3d-models.test.mjs tests/cnc-quality.test.mjs tests/design-system.test.mjs tests/presets.test.mjs tests/accessibility.test.mjs",
     "build": "node scripts/build.mjs"
   },
   "dependencies": {

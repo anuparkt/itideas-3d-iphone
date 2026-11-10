@@ -64,17 +64,17 @@
       </section>
 
       <nav class="tabs" aria-label="เครื่องมือ" role="tablist">
-        <button type="button" role="tab" aria-selected="true" data-tab="info" class="active"><span>ⓘ</span><small>ข้อมูล</small></button>
-        <button type="button" role="tab" aria-selected="false" data-tab="view" class="tab-3d-only"><span aria-hidden="true">◫</span><small>มุมมอง</small></button>
-        <button type="button" role="tab" aria-selected="false" data-tab="layers" class="tab-2d-only" aria-label="ตั้งค่าการมองเห็น Layer"><span aria-hidden="true">▤</span><small>เลเยอร์</small></button>
-        <button type="button" role="tab" aria-selected="false" data-tab="measure"><span>↔</span><small>วัดระยะ</small></button>
-        <button type="button" role="tab" aria-selected="false" data-tab="nesting"><span aria-hidden="true">▧</span><small>Nesting</small></button>
-        <button type="button" role="tab" aria-selected="false" data-tab="more"><span aria-hidden="true">⇩</span><small>ส่งออก</small></button>
+        <button type="button" role="tab" aria-selected="true" id="tab-info" aria-controls="panel-info" data-tab="info" class="active"><span>ⓘ</span><small>ข้อมูล</small></button>
+        <button type="button" role="tab" aria-selected="false" id="tab-view" aria-controls="panel-view" data-tab="view" class="tab-3d-only"><span aria-hidden="true">◫</span><small>มุมมอง</small></button>
+        <button type="button" role="tab" aria-selected="false" id="tab-layers" aria-controls="panel-layers" data-tab="layers" class="tab-2d-only" aria-label="ตั้งค่าการมองเห็น Layer"><span aria-hidden="true">▤</span><small>เลเยอร์</small></button>
+        <button type="button" role="tab" aria-selected="false" id="tab-measure" aria-controls="panel-measure" data-tab="measure"><span>↔</span><small>วัดระยะ</small></button>
+        <button type="button" role="tab" aria-selected="false" id="tab-nesting" aria-controls="panel-nesting" data-tab="nesting"><span aria-hidden="true">▧</span><small>Nesting</small></button>
+        <button type="button" role="tab" aria-selected="false" id="tab-more" aria-controls="panel-more" data-tab="more"><span aria-hidden="true">⇩</span><small>ส่งออก</small></button>
       </nav>
 
       <section class="sheet" id="toolSheet" aria-label="แผงตรวจแบบและเครื่องมือ">
         <div class="sheet-handle"></div>
-        <div class="tabpane active" data-pane="info">
+        <div class="tabpane active" data-pane="info" id="panel-info" role="tabpanel" aria-labelledby="tab-info" tabindex="0">
           <div class="sheet-title"><b>ข้อมูลโมเดล</b><span id="formatBadge" class="badge">—</span></div>
           <div class="stats-grid">
             <div><small>ชื่อไฟล์</small><b id="fileName">—</b></div>
@@ -87,7 +87,7 @@
           <p class="note">ตรวจสเกลและหน่วยจากไฟล์ CAD ต้นฉบับก่อนผลิตจริง · DXF เป็นภาพพรีวิว ไม่ใช่ Toolpath สำหรับ CNC</p>
         </div>
 
-        <div class="tabpane" data-pane="layers">
+        <div class="tabpane" data-pane="layers" id="panel-layers" role="tabpanel" aria-labelledby="tab-layers" tabindex="0">
           <div class="sheet-title"><b>จัดการเลเยอร์ DXF</b><span id="cadLayerSummary" class="layer-summary">ยังไม่มี DXF</span></div>
           <div class="layer-actions">
             <button id="cadLayersShowAll" class="secondary" type="button">แสดงทั้งหมด</button>
@@ -96,7 +96,7 @@
           <div id="cadLayerList" class="cad-layer-list" role="group" aria-label="รายการเลเยอร์ DXF"></div>
           <p class="note">แตะสวิตช์เพื่อเปิดหรือปิดเลเยอร์บนแบบ การซ่อนเลเยอร์มีผลเฉพาะหน้าพรีวิวและไฟล์ที่ส่งออก</p>
         </div>
-        <div class="tabpane" data-pane="view">
+        <div class="tabpane" data-pane="view" id="panel-view" role="tabpanel" aria-labelledby="tab-view" tabindex="0">
           <div class="sheet-title"><b>การแสดงผล</b></div>
           <label class="setting"><span>กล้อง</span><select id="cameraMode"><option value="perspective">Perspective</option><option value="orthographic">Orthographic</option></select></label>
           <label class="setting"><span>โหมด</span><select id="renderMode"><option value="edges">Solid + Edges</option><option value="solid">Solid</option><option value="wireframe">Wireframe</option></select></label>
@@ -106,7 +106,7 @@
           <label class="setting switchrow"><span>หมุนอัตโนมัติ</span><input id="autoRotate" type="checkbox" /></label>
         </div>
 
-        <div class="tabpane" data-pane="measure">
+        <div class="tabpane" data-pane="measure" id="panel-measure" role="tabpanel" aria-labelledby="tab-measure" tabindex="0">
           <div class="sheet-title"><b>วัดระยะ 2 จุด</b></div>
           <div id="measureReadout" class="measure-box">ระยะ: —</div>
           <div class="action-row">
@@ -116,7 +116,7 @@
           <p class="note">3D: แตะผิวโมเดลสองจุด · DXF: แตะสองตำแหน่งบนภาพ 2D พร้อม Snap จุดปลายที่ตรวจพบ · AI: ไม่รองรับการวัดจากภาพพรีวิว</p>
         </div>
 
-        <div class="tabpane" data-pane="nesting">
+        <div class="tabpane" data-pane="nesting" id="panel-nesting" role="tabpanel" aria-labelledby="tab-nesting" tabindex="0">
           <div class="sheet-title"><b>Nesting / CNC Costing</b><span class="layer-summary">INSPECTION v2.3</span></div>
           <p class="workflow-kicker">01 / SOURCE & PREFLIGHT</p>
           <p id="nestSourceStatus" class="note">เปิด DXF ที่มี Closed Contours หรือกดตัวอย่าง ABC</p>
@@ -203,7 +203,7 @@
           <p class="note">ราคาอ้างอิงตลาดที่พบ: อักษรพลาสวูด 10 มม. สูง 50 ซม. 320 ฿/ตัว (TP Media, 9 ก.ย. 2568) ไม่ใช่ค่าเฉลี่ยตลาด; ตัวเลขต้นทุนเป็นค่าเริ่มต้นที่แก้ไขได้</p>
           <p class="note">รองรับ Bounding Box และ Polygon-aware Beta พร้อม Preflight/Offset Preview แต่ยังไม่สร้าง Toolpath, Lead-in/out, Tabs หรือ G-code ต้องตรวจยืนยันใน CAM ก่อนตัดจริง</p>
         </div>
-        <div class="tabpane" data-pane="more">
+        <div class="tabpane" data-pane="more" id="panel-more" role="tabpanel" aria-labelledby="tab-more" tabindex="0">
           <div class="sheet-title"><b>ส่งออกไฟล์และเอกสาร</b><span class="layer-summary">EXPORT</span></div>
           <div class="export-grid" role="group" aria-label="เลือกชนิดไฟล์ส่งออก">
             <button id="exportReviewPdfBtn" class="export-btn" type="button"><b>PDF · A4</b><small>ส่งตรวจ / ประกอบการอนุมัติ</small></button>
