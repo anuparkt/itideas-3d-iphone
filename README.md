@@ -21,6 +21,23 @@ Mobile-first CAD inspection on iPhone, iPad and PC. Independent static PWA; no F
 
 On iPhone Safari, use the Export tab; if the browser previews a file instead of saving it, tap **Share → Save to Files**.
 
+
+## Nesting and CNC pricing (v2.2)
+
+Open the **Nesting** tab on iPhone (available even without a CAD file).
+
+1. Open a DXF from Files and choose **Use current DXF**, or tap **ABC example** (A/B/C are **pricing-only rectangles**, not letter toolpaths).
+2. Set sheet width/height in mm, material price for one selected sheet, margin, gap, kerf/tool allowance, quantity and optional 0/90 degree rotation.
+3. Set cutting cost in THB per meter, setup, tooling, finishing, gross margin and VAT.
+4. Tap **Arrange + Calculate** to inspect placements, cut length, utilization, costs, and suggested sale price.
+5. Export the selected sheet as **SVG for review**, **PDF A4 review**, or **CSV cut list**. These files are marked **NOT FOR CNC** or **PREVIEW ONLY**.
+
+**Nesting algorithm:** Bounding-box MaxRects, deterministic within its heuristic, not true-shape polygon nesting. Blocks/ellipses/splines may be approximated by DXF preview; open polylines, helper layers, unknown physical units and TEXT without outlines are not sent into the nesting engine as valid cut pieces. The engine does not calculate machining feeds/speeds, cutter compensation, toolpaths, tabs, lead-in/out or collision-free CAM. Inspect every geometry in CAD/CAM before routing.
+
+**ABC default example (not confirmed cutting quote):** three 500 mm tall letters, assumed combined toolpath 7.2 m, 10 mm PVC foam board, half-sheet 1220 x 1220 mm at THB 388, cut THB 35/m, setup THB 150, tool THB 80, finishing THB 120, target gross margin 35% => estimate CNC cutting THB 482; total cost THB 990; indicated sale THB 1,523, rounded up to THB 1,550. A published 50 cm PVC foam letter rate THB 320 each / THB 960 for three (TP Media, 9 Sep 2025) is **one market benchmark, not a current statistical average**, source https://www.pattayaprint.com/product.php?id=10 .
+
+**3D Viewer extra formats:** OBJ, PLY, GLB, glTF (standalone embedded buffers/textures) in addition to STL, 3MF, STEP/STP. glTF coordinates are conventionally meters and converted to mm on import; OBJ/PLY have no standard physical units, so reported dimensions stay in model units. External OBJ .mtl files and separate glTF textures/buffers aren't loaded via the single-file picker.
+
 ## Development
 Requires Node.js >=20.
 ```

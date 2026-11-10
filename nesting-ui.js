@@ -147,7 +147,7 @@ export function setupNestingUI({cad2d,showToast=()=>{},showFileError=()=>{}}){
     const jpeg=await svgToJpeg(exportNestingSvg(nest,sheet));
     const bytes=exportJpegReviewPdf(jpeg.bytes,jpeg.width,jpeg.height,{
      fileName:lastResult.fileName,
-     details:'NEST '+(sheet+1)+'/'+nest.sheetCount+' '+nest.sheet.width+'x'+nest.sheet.height+' mm / THB '+fmt(quote.salePrice)+' / NOT FOR CNC'
+     details:'SHEET '+(sheet+1)+'/'+nest.sheetCount+' '+nest.sheet.width+'x'+nest.sheet.height+'mm / CUT THB '+money(quote.cutCost)+' / MATERIAL THB '+money(quote.materialCost)+' / COST THB '+money(quote.totalCost)+' / SELL THB '+money(Math.ceil(quote.salePrice/50)*50)
     });
     saveFile(bytes,'application/pdf',prefix+'_A4_REVIEW.pdf');
    }
