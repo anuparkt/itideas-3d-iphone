@@ -213,7 +213,7 @@ $('exportPngBtn').onclick=()=>exportFile('png');
 $('exportStlBtn').onclick=()=>exportFile('stl');
 syncExportButtons();
 
-document.querySelectorAll('.tabs button').forEach(btn=>btn.onclick=()=>{document.querySelectorAll('.tabs button').forEach(b=>b.classList.toggle('active',b===btn));document.querySelectorAll('.tabpane').forEach(p=>p.classList.toggle('active',p.dataset.pane===btn.dataset.tab));document.body.classList.toggle('inspection-nesting',btn.dataset.tab==='nesting');});
+document.querySelectorAll('.tabs button').forEach(btn=>btn.onclick=()=>{document.querySelectorAll('.tabs button').forEach(b=>{b.classList.toggle('active',b===btn);b.setAttribute('aria-selected',String(b===btn));});document.querySelectorAll('.tabpane').forEach(p=>p.classList.toggle('active',p.dataset.pane===btn.dataset.tab));document.body.classList.toggle('inspection-nesting',btn.dataset.tab==='nesting');$('toolSheet').scrollTop=0;});
 const modal=$('installModal');const showInstall=()=>modal.classList.remove('hidden');$('installBtn').onclick=showInstall;$('helpInstallBtn').onclick=showInstall;$('closeInstall').onclick=()=>modal.classList.add('hidden');$('closeInstall2').onclick=()=>modal.classList.add('hidden');modal.addEventListener('click',e=>{if(e.target===modal)modal.classList.add('hidden')});
 
 window.addEventListener('dragover',e=>e.preventDefault());window.addEventListener('drop',e=>{e.preventDefault();const f=e.dataTransfer?.files?.[0];if(f)loadFile(f)});
