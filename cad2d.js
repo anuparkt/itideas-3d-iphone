@@ -2,17 +2,17 @@ import {drawingFromDxf,isPdfCompatibleAI,decodeDxfBytes} from './cad-geometry.js
 const $=id=>document.getElementById(id);
 const wrap=$('viewerWrap');
 const stage=document.createElement('div');stage.id='cad2dStage';stage.className='cad2d-stage';
-stage.innerHTML='<div class="cad2d-viewport"><div class="cad2d-surface"></div></div><div class="cad2d-tools"><button data-cad="fit">Fit</button><button data-cad="plus">+</button><button data-cad="minus">−</button><button data-cad="layers">Layers</button></div><div class="cad2d-layer-panel hidden"><strong>DXF LAYERS</strong><div class="cad2d-layer-list"></div></div><div class="cad2d-caption"></div>';
+stage.innerHTML='<div class="cad2d-viewport"><div class="cad2d-surface"></div></div><div class="cad2d-tools" role="toolbar" aria-label="เครื่องมือดู CAD"><button data-cad="fit" type="button" aria-label="แสดงแบบเต็มพื้นที่">Fit</button><button data-cad="plus" type="button" aria-label="ซูมเข้า">＋</button><button data-cad="minus" type="button" aria-label="ซูมออก">−</button><button data-cad="layers" type="button" aria-label="เปิดแท็บเลเยอร์">Layers</button><button data-cad="focus" type="button" aria-label="ขยายพื้นที่แบบเต็มจอ" aria-pressed="false">เต็มจอ</button></div><div class="cad2d-caption" aria-live="polite"></div>';
 wrap.appendChild(stage);
 const viewport=stage.querySelector('.cad2d-viewport');
 const surface=stage.querySelector('.cad2d-surface');
-const layerPanel=stage.querySelector('.cad2d-layer-panel');
-const layersList=stage.querySelector('.cad2d-layer-list');
+const layersList=$('cadLayerList');
+const layerSummary=$('cadLayerSummary');
 const caption=stage.querySelector('.cad2d-caption');
 const SVG_NS='http://www.w3.org/2000/svg';
 let active=false,drawing=null,svg=null,aiCanvas=null,measurePoints=[],measuring=false;
 let naturalWidth=100,naturalHeight=100,fitZoom=1,zoom=1,tx=0,ty=0;
-let pdfHandle=null;
+let pdfHandle=null,currentFile=null;
 const pointers=new Map();let pinchDistance=null,downPoint=null;
 const $svg=(name)=>document.createElementNS(SVG_NS,name);
 const pretty=(value)=>Number.isFinite(value)?value.toLocaleString('en-US',{maximumFractionDigits:2}):'—';
@@ -25,6 +25,9 @@ function setFileStats(file,format,w,h,unitText,count,note) {
  $('dimY').textContent=pretty(h)+' '+unitText;
  $('dimZ').textContent=format==='DXF'?'2D':'—';
  $('triCount').textContent=count===null?'—':count.toLocaleString();
+ $('geometryCountLabel').textContent=format==='DXF'?'Entities':'Pages';
+ document.body.classList.toggle('inspection-ai',format==='AI');
+ $('fileName').title=file.name;
  $('hudName').textContent=file.name;
  $('hudDims').textContent='X '+pretty(w)+' · Y '+pretty(h)+' '+unitText;
  $('emptyState').classList.add('hidden');
@@ -92,9 +95,29 @@ function measureAt(clientX,clientY) {
 stage.querySelector('[data-cad="fit"]').onclick=fit;
 stage.querySelector('[data-cad="plus"]').onclick=()=>changeZoom(1.25);
 stage.querySelector('[data-cad="minus"]').onclick=()=>changeZoom(.8);
-stage.querySelector('[data-cad="layers"]').onclick=()=>layerPanel.classList.toggle('hidden');
+stage.querySelector('[data-cad="layers"]').onclick=()=>{
+  const tab=document.querySelector('[data-tab="layers"]');
+  if(document.body.classList.contains('inspection-focus'))setFocus(false);
+  if(tab?.offsetParent!==null)tab.click();
+};
+const focusButton=stage.querySelector('[data-cad="focus"]');
+function setFocus(enabled){
+  document.body.classList.toggle('inspection-focus',enabled);
+  focusButton.setAttribute('aria-pressed',String(enabled));
+  focusButton.textContent=enabled?'กลับสู่แผง':'เต็มจอ';
+  focusButton.setAttribute('aria-label',enabled?'ออกจากโหมดเต็มจอ':'ขยายพื้นที่แบบเต็มจอ');
+  requestAnimationFrame(()=>{if(active)fit();});
+}
+focusButton.onclick=()=>setFocus(!document.body.classList.contains('inspection-focus'));
+function setAllLayers(visible){
+  for(const cb of layersList.querySelectorAll('input[type="checkbox"]')){
+    cb.checked=visible;cb.dispatchEvent(new Event('change'));
+  }
+}
+$('cadLayersShowAll').onclick=()=>setAllLayers(true);
+$('cadLayersHideAll').onclick=()=>setAllLayers(false);
 stage.addEventListener('pointerdown',e=>{
- if(e.target.closest('button')||e.target.closest('.cad2d-layer-panel'))return;
+ if(e.target.closest('button'))return;
  stage.setPointerCapture(e.pointerId);pointers.set(e.pointerId,{x:e.clientX,y:e.clientY});
  downPoint={x:e.clientX,y:e.clientY,id:e.pointerId};
  if(pointers.size===2){const [a,b]=[...pointers.values()];pinchDistance=Math.hypot(a.x-b.x,a.y-b.y);}
@@ -138,12 +161,21 @@ function redrawDXF(model){
    el.setAttribute('font-size',Math.max(t.size,.5));el.setAttribute('fill','#e1e8ef');
    el.setAttribute('stroke','none');el.textContent=t.value;g.appendChild(el);}
  surface.appendChild(svg);
- layersList.replaceChildren();layerPanel.classList.remove('hidden');
- for(const l of model.layers){const label=document.createElement('label');label.className='cad-layer-row';
+ layersList.replaceChildren();
+ const selectedCount=()=>[...layersList.querySelectorAll('input[type="checkbox"]')].filter(cb=>cb.checked).length;
+ const refreshSummary=()=>{layerSummary.textContent=selectedCount()+' / '+model.layers.length+' แสดงอยู่';};
+ for(const [i,l] of model.layers.entries()){
+   const label=document.createElement('label');label.className='cad-layer-row';
    const cb=document.createElement('input');cb.type='checkbox';cb.checked=true;
-   cb.onchange=()=>{layerGroups.get(l.name).style.display=cb.checked?'':'none';};
-   const text=document.createElement('span');text.textContent=l.name+' ('+l.count+')';
-   label.append(cb,text);layersList.appendChild(label);}
+   cb.setAttribute('aria-label','แสดงเลเยอร์ '+l.name);
+   cb.onchange=()=>{layerGroups.get(l.name).style.display=cb.checked?'':'none';refreshSummary();};
+   const swatch=document.createElement('i');swatch.className='cad-layer-swatch cad-color-'+(i%palette.length);swatch.setAttribute('aria-hidden','true');
+   const name=document.createElement('span');name.className='cad-layer-name';name.textContent=l.name;
+   const count=document.createElement('span');count.className='cad-layer-count';count.textContent=l.count.toLocaleString();
+   label.append(cb,swatch,name,count);layersList.appendChild(label);
+ }
+ refreshSummary();
+ stage.querySelector('[data-cad="layers"]').textContent='Layers · '+model.layers.length;
  naturalWidth=b.width;naturalHeight=b.height;
  surface.style.width=b.width+'px';surface.style.height=b.height+'px';
 }
@@ -156,7 +188,7 @@ function show(){
 function hide(){
  active=false;stage.style.display='none';wrap.classList.remove('has-cad2d');
  $('viewer').style.visibility='visible';document.body.classList.remove('inspection-2d');
- layerPanel.classList.add('hidden');clearMeasure();
+ setFocus(false);clearMeasure();
  if(pdfHandle){pdfHandle.destroy().catch(()=>{});pdfHandle=null;}
 }
 function loadDxfParser(){
@@ -169,6 +201,7 @@ function loadDxfParser(){
  });
 }
 async function loadDXF(file){
+ currentFile=file;
  const DxfParser=await loadDxfParser();
  const text=decodeDxfBytes(await file.arrayBuffer());
  let parsed;
@@ -183,6 +216,7 @@ async function loadDXF(file){
  'DXF preview · '+model.layers.length+' layers'+warn+' · ตรวจแบบใน CAD ก่อน CNC');
 }
 async function loadAI(file){
+ currentFile=file;
  const buffer=await file.arrayBuffer();
  if(!isPdfCompatibleAI(new Uint8Array(buffer)))throw new Error('ไฟล์ AI นี้ไม่มีข้อมูล PDF-compatible ให้บันทึกใหม่ใน Illustrator โดยเปิด Create PDF Compatible File');
  const pdfjs=await import('https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.9.155/pdf.min.mjs');
@@ -201,9 +235,10 @@ async function loadAI(file){
  svg=null;aiCanvas=canvas;drawing=null;clearMeasure();
  naturalWidth=natural.width;naturalHeight=natural.height;
  surface.style.width=natural.width+'px';surface.style.height=natural.height+'px';
- layersList.replaceChildren();layerPanel.classList.add('hidden');show();
+ layersList.replaceChildren();layerSummary.textContent='พรีวิว AI ไม่มีข้อมูล Layer';
+ stage.querySelector('[data-cad="layers"]').textContent='Layers';show();
  const mm=25.4/72;
- setFileStats(file,'AI',natural.width*mm,natural.height*mm,'mm',null,
+ setFileStats(file,'AI',natural.width*mm,natural.height*mm,'mm',pdf.numPages,
  'AI PDF-compatible · ขนาดที่แสดงคือขนาดหน้า PDF ไม่ใช่เส้นไดคัท · หน้า 1 / '+pdf.numPages);
 }
 export async function loadCad2D(file) {
@@ -214,6 +249,8 @@ export async function loadCad2D(file) {
 }
 export const cad2d={
  get active(){return active;},hide,fit,beginMeasure,clearMeasure,
+ get drawing(){return drawing;}, get aiCanvas(){return aiCanvas;}, get originalFile(){return currentFile;},
+ get visibleLayers(){return new Set([...layersList.querySelectorAll('label')].filter(label=>label.querySelector('input')?.checked).map(label=>label.querySelector('.cad-layer-name')?.textContent));},
  capture:async()=>{
    try {
     if(aiCanvas){const a=document.createElement('a');a.download='ITIDEAS-AI-'+Date.now()+'.png';a.href=aiCanvas.toDataURL('image/png');a.click();return;}

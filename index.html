@@ -13,7 +13,7 @@
   <link rel="apple-touch-icon" href="./icons/apple-touch-icon.png" />
   <link rel="icon" href="./icons/icon-192.png" />
   <link rel="stylesheet" href="./style.css" />
-  <title>ITIDEAS CAD Viewer v2.0.4</title>
+  <title>ITIDEAS CAD Viewer v2.1.0</title>
   <script type="importmap">
   {
     "imports": {
@@ -27,10 +27,10 @@
   <div id="app">
     <header class="topbar">
       <div class="brand">
-        <div class="brandmark">3D</div>
+        <div class="brandmark" aria-hidden="true">ID</div>
         <div class="brandtext">
           <b>ITIDEAS CAD</b>
-          <small>STL · 3MF · STEP · DXF · AI</small>
+          <small>CAD INSPECTION / 2D + 3D</small>
         </div>
       </div>
       <div class="top-actions">
@@ -71,9 +71,10 @@
 
       <nav class="tabs" aria-label="เครื่องมือ">
         <button data-tab="info" class="active"><span>ⓘ</span><small>ข้อมูล</small></button>
-        <button data-tab="view"><span>◫</span><small>มุมมอง</small></button>
+        <button data-tab="view" class="tab-3d-only"><span aria-hidden="true">◫</span><small>มุมมอง</small></button>
+        <button data-tab="layers" class="tab-2d-only" aria-label="ตั้งค่าการมองเห็น Layer"><span aria-hidden="true">▤</span><small>เลเยอร์</small></button>
         <button data-tab="measure"><span>↔</span><small>วัดระยะ</small></button>
-        <button data-tab="more"><span>•••</span><small>เพิ่มเติม</small></button>
+        <button data-tab="more"><span aria-hidden="true">⇩</span><small>ส่งออก</small></button>
       </nav>
 
       <section class="sheet" id="toolSheet">
@@ -85,12 +86,21 @@
             <div><small>ขนาดไฟล์</small><b id="fileSize">—</b></div>
             <div><small>X</small><b id="dimX">—</b></div>
             <div><small>Y</small><b id="dimY">—</b></div>
-            <div><small>Z</small><b id="dimZ">—</b></div>
-            <div><small>Triangles</small><b id="triCount">—</b></div>
+            <div id="statZ"><small>Z</small><b id="dimZ">—</b></div>
+            <div><small id="geometryCountLabel">Triangles</small><b id="triCount">—</b></div>
           </div>
-          <p class="note">3D: ตรวจสอบหน่วย/Scale จากไฟล์ต้นฉบับก่อนผลิต · DXF: อ่านหน่วย $INSUNITS · AI: ขนาดหน้า PDF (Artboard) ไม่ใช่ความยาวเส้นไดคัท</p>
+          <p class="note">ตรวจสเกลและหน่วยจากไฟล์ CAD ต้นฉบับก่อนผลิตจริง · DXF เป็นภาพพรีวิว ไม่ใช่ Toolpath สำหรับ CNC</p>
         </div>
 
+        <div class="tabpane" data-pane="layers">
+          <div class="sheet-title"><b>จัดการเลเยอร์ DXF</b><span id="cadLayerSummary" class="layer-summary">ยังไม่มี DXF</span></div>
+          <div class="layer-actions">
+            <button id="cadLayersShowAll" class="secondary" type="button">แสดงทั้งหมด</button>
+            <button id="cadLayersHideAll" class="secondary" type="button">ซ่อนทั้งหมด</button>
+          </div>
+          <div id="cadLayerList" class="cad-layer-list" role="group" aria-label="รายการเลเยอร์ DXF"></div>
+          <p class="note">แตะสวิตช์เพื่อเปิดหรือปิดเลเยอร์บนแบบ การซ่อนเลเยอร์มีผลเฉพาะหน้าพรีวิวและไฟล์ที่ส่งออก</p>
+        </div>
         <div class="tabpane" data-pane="view">
           <div class="sheet-title"><b>การแสดงผล</b></div>
           <label class="setting"><span>กล้อง</span><select id="cameraMode"><option value="perspective">Perspective</option><option value="orthographic">Orthographic</option></select></label>
@@ -112,7 +122,15 @@
         </div>
 
         <div class="tabpane" data-pane="more">
-          <div class="sheet-title"><b>เครื่องมือเพิ่มเติม</b></div>
+          <div class="sheet-title"><b>ส่งออกไฟล์และเอกสาร</b><span class="layer-summary">EXPORT</span></div>
+          <div class="export-grid" role="group" aria-label="เลือกชนิดไฟล์ส่งออก">
+            <button id="exportReviewPdfBtn" class="export-btn" type="button"><b>PDF · A4</b><small>ส่งตรวจ / ประกอบการอนุมัติ</small></button>
+            <button id="exportPrintPdfBtn" class="export-btn" type="button"><b>PDF · 1:1</b><small>เวกเตอร์ขนาดจริงสำหรับงานพิมพ์</small></button>
+            <button id="exportSvgBtn" class="export-btn" type="button"><b>SVG</b><small>เส้นเวกเตอร์ DXF ตามเลเยอร์</small></button>
+            <button id="exportPngBtn" class="export-btn" type="button"><b>PNG</b><small>ภาพพรีวิวความละเอียดสูง</small></button>
+          </div>
+          <p id="exportHint" class="note export-hint" role="status">DXF รองรับ PDF เวกเตอร์และ SVG ส่วนภาพ 3D รองรับ PDF ตรวจแบบและ PNG · การแปลงพรีวิวไม่ใช่การสร้าง Toolpath</p>
+          <div class="sheet-title more-title"><b>เครื่องมือ</b></div>
           <div class="action-grid">
             <button id="resetBtn" class="secondary">รีเซ็ตมุม</button>
             <button id="bgBtn" class="secondary">เปลี่ยนพื้นหลัง</button>
@@ -129,7 +147,7 @@
     <div id="fileError" class="file-error hidden" role="alert" aria-live="assertive">
       <strong>เปิดไฟล์ไม่สำเร็จ</strong>
       <p id="fileErrorDetail"></p>
-      <div class="file-error-actions"><button id="dismissFileError" class="secondary">ปิดข้อความ</button><span>ITIDEAS CAD v2.0.4</span></div>
+      <div class="file-error-actions"><button id="dismissFileError" class="secondary">ปิดข้อความ</button><span>ITIDEAS CAD v2.1.0</span></div>
     </div>
     <div id="installModal" class="modal hidden" role="dialog" aria-modal="true">
       <div class="modal-card">
