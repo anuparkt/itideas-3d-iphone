@@ -1,7 +1,7 @@
 name: CAD Viewer tests and static build
 on:
   push:
-    branches: [cloudflare-independent-cad-viewer]
+    branches: [cloudflare-independent-cad-viewer, cad-v2.3-design-cnc-qa]
   pull_request:
     branches: [main]
 jobs:
